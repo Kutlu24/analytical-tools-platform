@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Compass</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+        <span class="logo-icon">⊕</span>
+        <span class="logo-text">Financial<br>Compass</span>
+    </div>
+    <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" data-section="dashboard">
+            <span class="nav-icon">◈</span><span>Dashboard</span>
+        </a>
+        <a href="#" class="nav-item" data-section="input">
+            <span class="nav-icon">◎</span><span>Data Entry</span>
+        </a>
+        <a href="#" class="nav-item" data-section="ratios">
+            <span class="nav-icon">◉</span><span>Ratio Analysis</span>
+        </a>
+        <a href="#" class="nav-item" data-section="charts">
+            <span class="nav-icon">◐</span><span>Charts</span>
+        </a>
+        <a href="#" class="nav-item" data-section="report">
+            <span class="nav-icon">◑</span><span>Report</span>
+        </a>
+        <a href="#" class="nav-item" data-section="glossary">
+            <span class="nav-icon">◒</span><span>Glossary</span>
+        </a>
+    </nav>
+    <div class="sidebar-footer">v2.1 • 2026</div>
+</aside>
+
+<div class="main-wrapper">
+    <!-- Top bar -->
+    <header class="topbar">
+        <button class="menu-toggle" id="menuToggle">☰</button>
+        <div class="topbar-title" id="pageTitle">Dashboard</div>
+        <div class="topbar-actions">
+            <span class="status-dot" id="statusDot"></span>
+            <span class="status-text" id="statusText">Awaiting Data</span>
+        </div>
+    </header>
+
+    <!-- SECTIONS -->
+    <main class="content">
+
+        <!-- ===== DASHBOARD ===== -->
+        <section id="section-dashboard" class="section active">
+            <div class="section-hero">
+                <div class="hero-text">
+                    <h1>Financial<br><em>Health Score</em></h1>
+                    <p>Analyze your company's financial data, calculate key ratios, and generate visual reports.</p>
+                    <button class="btn-hero" onclick="showSection('input')">Start Analysis →</button>
+                </div>
+                <div class="hero-score">
+                    <div class="score-gauge-wrap">
+                        <canvas id="chartHealthScore"></canvas>
+                        <div class="score-center">
+                            <div class="score-number" id="scoreNumber">—</div>
+                            <div class="score-label" id="scoreLabel">Awaiting data</div>
+                        </div>
+                    </div>
+                    <div class="score-caption">Weighted average of 6 ratios</div>
+                </div>
+            </div>
+            <div class="kpi-grid" id="kpiGrid">
+                <div class="kpi-card kpi-empty">
+                    <div class="kpi-icon">💧</div>
+                    <div class="kpi-label">Current Ratio</div>
+                    <div class="kpi-value">—</div>
+                </div>
+                <div class="kpi-card kpi-empty">
+                    <div class="kpi-icon">⚗️</div>
+                    <div class="kpi-label">Acid-Test Ratio</div>
+                    <div class="kpi-value">—</div>
+                </div>
+                <div class="kpi-card kpi-empty">
+                    <div class="kpi-icon">⚖️</div>
+                    <div class="kpi-label">Debt / Equity</div>
+                    <div class="kpi-value">—</div>
+                </div>
+                <div class="kpi-card kpi-empty">
+                    <div class="kpi-icon">📈</div>
+                    <div class="kpi-label">Net Profit Margin</div>
+                    <div class="kpi-value">—</div>
+                </div>
+                <div class="kpi-card kpi-empty">
+                    <div class="kpi-icon">🔄</div>
+                    <div class="kpi-label">Asset Turnover</div>
+                    <div class="kpi-value">—</div>
+                </div>
+                <div class="kpi-card kpi-empty">
+                    <div class="kpi-icon">💰</div>
+                    <div class="kpi-label">ROE</div>
+                    <div class="kpi-value">—</div>
+                </div>
+            </div>
+            <div id="alertsBox" class="alerts-box hidden">
+                <h3>⚠ Critical Alerts</h3>
+                <div id="alertsList"></div>
+            </div>
+        </section>
+
+        <!-- ===== INPUT ===== -->
+        <section id="section-input" class="section">
+            <h2 class="section-title">Data Entry</h2>
+
+            <div class="tabs">
+                <button class="tab active" data-tab="manuel">Manual Entry</button>
+                <button class="tab" data-tab="csv">Upload CSV / JSON</button>
+                <button class="tab" data-tab="document">Upload Document</button>
+            </div>
+
+            <div id="tab-manuel" class="tab-content active">
+                <div class="input-grid">
+                    <div class="input-group">
+                        <h3 class="group-title">🏦 Balance Sheet — Assets</h3>
+                        <div class="field"><label>Current Assets</label><input type="number" id="donenVarliklar" placeholder="0"></div>
+                        <div class="field"><label>Inventory</label><input type="number" id="stoklar" placeholder="0"></div>
+                        <div class="field"><label>Cash & Equivalents</label><input type="number" id="nakit" placeholder="0"></div>
+                        <div class="field"><label>Total Assets</label><input type="number" id="toplamAktif" placeholder="0"></div>
+                    </div>
+                    <div class="input-group">
+                        <h3 class="group-title">📋 Balance Sheet — Liabilities</h3>
+                        <div class="field"><label>Current Liabilities</label><input type="number" id="kisaVadeliBorclar" placeholder="0"></div>
+                        <div class="field"><label>Long-Term Liabilities</label><input type="number" id="uzunVadeliBorclar" placeholder="0"></div>
+                        <div class="field"><label>Total Liabilities</label><input type="number" id="toplamBorclar" placeholder="0"></div>
+                        <div class="field"><label>Equity</label><input type="number" id="ozkaynak" placeholder="0"></div>
+                    </div>
+                    <div class="input-group">
+                        <h3 class="group-title">📊 Income Statement</h3>
+                        <div class="field"><label>Net Sales</label><input type="number" id="netSatislar" placeholder="0"></div>
+                        <div class="field"><label>Gross Profit</label><input type="number" id="brutKar" placeholder="0"></div>
+                        <div class="field"><label>Operating Profit (EBIT)</label><input type="number" id="faaliyetKari" placeholder="0"></div>
+                        <div class="field"><label>Net Profit</label><input type="number" id="netKar" placeholder="0"></div>
+                    </div>
+                    <div class="input-group">
+                        <h3 class="group-title">🏢 Additional Data</h3>
+                        <div class="field"><label>Accounts Receivable</label><input type="number" id="alacaklar" placeholder="0"></div>
+                        <div class="field"><label>Interest Expense</label><input type="number" id="faizGiderleri" placeholder="0"></div>
+                        <div class="field"><label>Earnings Per Share (EPS)</label><input type="number" id="eps" placeholder="0"></div>
+                        <div class="field"><label>Share Price</label><input type="number" id="hisseFiyati" placeholder="0"></div>
+                    </div>
+                </div>
+                <div class="btn-row">
+                    <button class="btn-primary" onclick="hesapla()">Analyze →</button>
+                    <button class="btn-secondary" onclick="ornekVeriYukle()">Load Sample Data</button>
+                    <button class="btn-ghost" onclick="formuSifirla()">Clear</button>
+                </div>
+            </div>
+
+            <div id="tab-csv" class="tab-content">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <p>Drag your CSV or JSON file here</p>
+                    <span>or</span>
+                    <label class="btn-upload">
+                        Choose File
+                        <input type="file" id="fileInput" accept=".csv,.json" style="display:none">
+                    </label>
+                    <p class="upload-hint">Supported: .csv, .json</p>
+                </div>
+                <div id="csvPreview" class="csv-preview hidden"></div>
+                <div class="csv-format">
+                    <h4>Expected Format (CSV):</h4>
+                    <pre>field,value
+donenVarliklar,500000
+stoklar,120000
+nakit,80000
+toplamAktif,900000
+kisaVadeliBorclar,300000
+...</pre>
+                    <h4>Expected Format (JSON):</h4>
+                    <pre>{"donenVarliklar":500000,"stoklar":120000,"nakit":80000,...}</pre>
+                    <button class="btn-secondary" onclick="sablonIndir()">📥 Download Sample CSV</button>
+                </div>
+            </div>
+
+            <div id="tab-document" class="tab-content">
+                <div class="upload-area" id="docUploadArea">
+                    <div class="upload-icon">🧾</div>
+                    <p>Drag a balance sheet document here (PDF or image)</p>
+                    <span>or</span>
+                    <label class="btn-upload">
+                        Choose File
+                        <input type="file" id="docFileInput" accept=".pdf,image/*" style="display:none">
+                    </label>
+                    <p class="upload-hint">Supported: .pdf (text or scanned), .png, .jpg — read by AI, so double-check the extracted numbers before relying on them.</p>
+                </div>
+                <div id="docStatus" class="csv-preview hidden"></div>
+            </div>
+        </section>
+
+        <!-- ===== RATIOS ===== -->
+        <section id="section-ratios" class="section">
+            <h2 class="section-title">Ratio Analysis</h2>
+            <div id="noDataMsg" class="no-data-msg">
+                <span>Enter data first</span>
+                <button class="btn-secondary" onclick="showSection('input')">Enter Data →</button>
+            </div>
+            <div id="ratioResults" class="hidden">
+                <div class="ratio-category" id="catLikidite">
+                    <h3>💧 Liquidity Ratios</h3>
+                    <div class="ratio-cards" id="rLikidite"></div>
+                </div>
+                <div class="ratio-category" id="catKaldirac">
+                    <h3>⚖️ Leverage Ratios</h3>
+                    <div class="ratio-cards" id="rKaldirac"></div>
+                </div>
+                <div class="ratio-category" id="catKarlilik">
+                    <h3>📈 Profitability Ratios</h3>
+                    <div class="ratio-cards" id="rKarlilik"></div>
+                </div>
+                <div class="ratio-category" id="catFaaliyet">
+                    <h3>🔄 Activity Ratios</h3>
+                    <div class="ratio-cards" id="rFaaliyet"></div>
+                </div>
+                <div class="ratio-category" id="catPiyasa">
+                    <h3>📊 Market Ratios</h3>
+                    <div class="ratio-cards" id="rPiyasa"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== CHARTS ===== -->
+        <section id="section-charts" class="section">
+            <h2 class="section-title">Charts</h2>
+            <div id="noDataMsgChart" class="no-data-msg">
+                <span>Enter data first</span>
+                <button class="btn-secondary" onclick="showSection('input')">Enter Data →</button>
+            </div>
+            <div id="chartResults" class="hidden">
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h4>Liquidity Ratios</h4>
+                        <canvas id="chartLikidite"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h4>Profitability Ratios (%)</h4>
+                        <canvas id="chartKarlilik"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h4>Asset Composition</h4>
+                        <canvas id="chartVarlik"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h4>Liability Structure</h4>
+                        <canvas id="chartBorc"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card chart-full">
+                    <h4>Ratio Radar Analysis</h4>
+                    <div class="radar-wrap"><canvas id="chartRadar"></canvas></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== REPORT ===== -->
+        <section id="section-report" class="section">
+            <h2 class="section-title">Report</h2>
+            <div id="noDataMsgReport" class="no-data-msg">
+                <span>Run an analysis first</span>
+                <button class="btn-secondary" onclick="showSection('input')">Enter Data →</button>
+            </div>
+            <div id="reportContent" class="hidden">
+                <div class="report-actions">
+                    <button class="btn-primary" onclick="raporuYazdir()">🖨 Print / PDF</button>
+                    <button class="btn-secondary" onclick="raporuCSVIndir()">📥 Download CSV</button>
+                </div>
+                <div id="reportBody" class="report-body"></div>
+            </div>
+        </section>
+
+        <!-- ===== GLOSSARY ===== -->
+        <section id="section-glossary" class="section">
+            <h2 class="section-title">Glossary of Terms</h2>
+            <div class="search-row">
+                <input type="text" id="glossarySearch" placeholder="Search terms..." oninput="filterGlossary()">
+            </div>
+            <div id="glossaryList" class="glossary-list"></div>
+        </section>
+
+    </main>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script src="script.js"></script>
+</body>
+</html>

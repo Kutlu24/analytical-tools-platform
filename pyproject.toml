@@ -1,0 +1,29 @@
+[project]
+name = "analytical-tools-platform"
+version = "0.1.0"
+description = "Analytical Tools Platform: operations research solver, financial statement analysis and Petri-net hotel pricing under one FastAPI roof"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "httpx>=0.27",
+    "pydantic>=2.6",
+    "pydantic-settings>=2.2",
+    "python-dotenv>=1.0",
+    "openai>=1.50",
+    "google-genai>=1.0",
+    "pulp>=2.8",
+    "python-multipart>=0.0.9",
+    "pymupdf>=1.24",
+    "instructor[google-genai]>=1.17",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src", "apps/yoneylem/src", "apps/lackmus/src", "apps/petrinets/src"]

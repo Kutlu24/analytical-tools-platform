@@ -1,0 +1,98 @@
+:root {
+  --bg: #0f1117;
+  --bg-soft: #161a23;
+  --card: #1b2030;
+  --border: #2a3042;
+  --text: #e8eaf0;
+  --muted: #9aa3b5;
+  --accent: #5b8cff;
+  --accent-2: #7f6bff;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: "Manrope", "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  padding: 2.5rem 1.5rem 1.5rem;
+  text-align: center;
+  background: linear-gradient(160deg, rgba(91, 140, 255, 0.12), rgba(127, 107, 255, 0.06));
+  border-bottom: 1px solid var(--border);
+}
+
+header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+header p {
+  color: var(--muted);
+  margin-top: 0.5rem;
+  font-size: 1rem;
+}
+
+main {
+  flex: 1;
+  max-width: 1000px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 3rem;
+}
+
+.tools {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+}
+
+.card h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.card p {
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.card .go {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+footer {
+  text-align: center;
+  padding: 1.25rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  border-top: 1px solid var(--border);
+}

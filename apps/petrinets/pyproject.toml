@@ -1,0 +1,24 @@
+[project]
+name = "petrinets"
+version = "0.1.0"
+description = "Small-hotel room pricing recommendation tool: a real Petri-net simulation of booking demand -> transparent price interpolation -> LLM-written rationale (free-tier GLM/Gemini)"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.6",
+    "pydantic-settings>=2.2",
+    "python-dotenv>=1.0",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "openai>=1.50",
+    "google-genai>=1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

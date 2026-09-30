@@ -1,0 +1,254 @@
+:root {
+    --bg: #f5f1e6;
+    --surface: #fffdf7;
+    --ink: #22283a;
+    --ink-soft: #565f78;
+    --border: #ddd4bd;
+    --accent: #b5541f;
+    --accent-dark: #8f4118;
+    --accent-soft: rgba(181, 84, 31, 0.12);
+    --teal: #2f6f5e;
+    --teal-soft: rgba(47, 111, 94, 0.14);
+    --font-display: "Literata", Georgia, serif;
+    --font-body: "Manrope", -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "Source Code Pro", ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    font-family: var(--font-body);
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+}
+
+header {
+    background-color: var(--ink);
+    color: #fdfbf3;
+    padding: 28px 20px 24px;
+    text-align: center;
+    position: relative;
+}
+
+header h1 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 6px 0 6px;
+}
+
+header p {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: #d8cdb4;
+    margin: 0;
+}
+
+.lang-toggle {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    display: inline-flex;
+    border: 1px solid rgba(253, 251, 243, 0.35);
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.lang-btn {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.03em;
+    background: transparent;
+    color: #d8cdb4;
+    border: none;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: background-color .15s, color .15s;
+}
+
+.lang-btn.active {
+    background: var(--accent);
+    color: #fff;
+}
+
+nav {
+    background-color: #2c3346;
+    color: #fff;
+    padding: 10px;
+}
+
+nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    text-align: center;
+}
+
+nav li {
+    display: inline-block;
+    margin: 0 10px;
+}
+
+nav a {
+    color: #e9e3d2;
+    text-decoration: none;
+    font-size: 0.94rem;
+    transition: color 0.2s ease;
+}
+
+nav a:hover {
+    color: var(--accent);
+}
+
+main {
+    padding: 20px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+section {
+    margin-bottom: 30px;
+    background-color: var(--surface);
+    padding: 24px 26px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 2px rgba(34, 40, 58, 0.05);
+}
+
+h2 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--ink);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+}
+
+/* Feasible-region figure (Overview section) */
+.lp-figure {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+}
+.lp-figure svg { width: 100%; max-width: 340px; height: auto; }
+.lp-axis { stroke: var(--ink-soft); stroke-width: 1.5; }
+.lp-axis-label { font-family: var(--font-mono); font-size: 11px; fill: var(--ink-soft); }
+.lp-region { fill: var(--teal-soft); stroke: none; }
+.lp-constraint { stroke: var(--teal); stroke-width: 1.4; opacity: 0.8; }
+.lp-optimum { fill: var(--accent); }
+.lp-optimum-label { font-family: var(--font-mono); font-size: 10px; fill: var(--accent-dark); }
+.lp-gradient { stroke: var(--ink-soft); stroke-width: 1.2; }
+.lp-arrowhead { fill: var(--ink-soft); }
+.lp-gradient-label { font-family: var(--font-mono); font-size: 9px; fill: var(--ink-soft); }
+.lp-figure-caption {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    max-width: 460px;
+    margin: 8px auto 0;
+}
+
+/* Teknikler Bölümü Stilleri */
+.teknik-kategorileri {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.teknik-kategorileri button {
+    background-color: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--border);
+    padding: 9px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    margin: 5px;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.teknik-kategorileri button:hover {
+    background-color: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent-dark);
+}
+
+#teknik-icerik {
+    max-width: 700px;
+    margin: 0 auto;
+}
+#teknik-icerik p { margin: 8px 0; }
+
+.uygulama-listesi, .arac-listesi, .kaynak-listesi {
+    list-style: none;
+    padding: 0;
+}
+.uygulama-listesi li, .arac-listesi li {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+}
+.uygulama-listesi strong, .arac-listesi strong { color: var(--accent-dark); }
+.arac-listesi code {
+    font-family: var(--font-mono);
+    background: var(--teal-soft);
+    color: var(--teal);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.92em;
+}
+
+.kaynak-listesi li { margin-bottom: 10px; }
+.kaynak-listesi a { color: var(--accent-dark); font-weight: 600; }
+.kaynak-listesi span { color: var(--ink-soft); display: block; font-size: 0.9em; }
+
+/* Problem Çözücü Bölümü */
+.cozucu-aciklama { color: var(--ink-soft); }
+.model-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 0.8em; color: var(--teal);
+    background: var(--teal-soft); border: 1px solid rgba(47, 111, 94, 0.3); border-radius: 12px;
+    padding: 4px 12px; margin-bottom: 14px;
+}
+.cozucu-form textarea {
+    width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid var(--border); border-radius: 6px;
+    font-family: var(--font-mono); font-size: 0.94em; resize: vertical; background: var(--bg); color: var(--ink);
+}
+.cozucu-form button {
+    background-color: var(--accent); color: #fff; border: none; padding: 10px 22px; border-radius: 5px;
+    cursor: pointer; margin-top: 10px; font-family: var(--font-body); font-weight: 600; font-size: 1em;
+    transition: background-color 0.2s ease;
+}
+.cozucu-form button:hover { background-color: var(--accent-dark); }
+.cozucu-form button:disabled { background-color: #c9c0ab; cursor: not-allowed; }
+.cozucu-durum { color: var(--ink-soft); font-size: 0.9em; margin-top: 8px; min-height: 1.2em; }
+.sonuc-kutusu {
+    background: var(--teal-soft); border: 1px solid rgba(47, 111, 94, 0.3); border-left: 4px solid var(--teal);
+    border-radius: 6px; padding: 14px 16px; margin-top: 16px;
+}
+.sonuc-kutusu.sonuc-uyari { background: var(--accent-soft); border-color: rgba(181, 84, 31, 0.35); border-left-color: var(--accent); }
+.sonuc-baslik { font-family: var(--font-mono); font-weight: 600; color: var(--ink); margin-bottom: 8px; }
+.sonuc-satir { margin: 4px 0; }
+.lp-degiskenler { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.lp-degisken { font-family: var(--font-mono); background: var(--surface); border: 1px solid rgba(47, 111, 94, 0.3); border-radius: 5px; padding: 4px 10px; }
+.sonuc-aciklama {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px;
+    margin-top: 12px; line-height: 1.7;
+}
+
+footer {
+    background-color: var(--ink);
+    color: #d8cdb4;
+    text-align: center;
+    padding: 14px;
+    font-size: 0.9rem;
+}

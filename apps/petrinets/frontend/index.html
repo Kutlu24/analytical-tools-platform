@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Petrinets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f3ee; --surface: #fff; --border: #e3ddd0; --text: #241c14; --text2: #5c5346; --text3: #948a79;
+    --accent: #0e5c56; --accent-dark: #073c38; --accent-soft: #e2eeec;
+    --gold: #b8863a; --gold-soft: #f7ecd8;
+    --low: #a3402f; --low-soft: #fbeae6;
+    --high: #0e5c56; --high-soft: #e2eeec;
+    --shadow: 0 1px 2px rgba(36,28,20,.05), 0 8px 24px -12px rgba(36,28,20,.14);
+    --shadow-sm: 0 1px 2px rgba(36,28,20,.06);
+    --font-display: "Fraunces", Georgia, serif;
+    --font-body: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: var(--font-body); font-size: 17px; background: var(--bg); color: var(--text); margin: 0; line-height: 1.55;
+    background-image: radial-gradient(1100px 420px at 50% -180px, rgba(14,92,86,.06), transparent 70%);
+  }
+  .topbar { height: 5px; background: linear-gradient(90deg, var(--accent), var(--gold)); }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 40px 24px 56px; }
+  .wrap.wide { max-width: 1180px; }
+  .brand { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 4px; }
+  .brand-mark {
+    flex-shrink: 0; width: 40px; height: 40px; border-radius: 10px; background: var(--accent);
+    display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); color: var(--gold-soft);
+    font-family: var(--font-mono); font-weight: 700; font-size: 1.1rem;
+  }
+  h1 { font-family: var(--font-display); font-weight: 600; font-size: 1.85rem; letter-spacing: -0.01em; margin: 0 0 6px; color: var(--text); }
+  .tagline { font-family: var(--font-display); font-style: italic; font-weight: 500; font-size: 1rem; color: var(--accent-dark); margin: 0 0 10px; }
+  .subtitle { color: var(--text2); margin: 0; max-width: 620px; font-size: 1rem; }
+  .scope-note {
+    margin-top: 16px; padding: 12px 16px; background: var(--gold-soft); border: 1px solid #e6d3a8; border-radius: 10px;
+    font-size: 0.86rem; color: #6b4f18; line-height: 1.5;
+  }
+  .model-badge {
+    display: inline-flex; align-items: center; gap: 7px; font-size: 0.76rem; color: var(--text2);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 5px 14px;
+    margin: 18px 0 4px; box-shadow: var(--shadow-sm);
+  }
+  .model-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; margin: 22px 0; box-shadow: var(--shadow); }
+  label.field-label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+  .field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; }
+  input[type=text], input[type=number], select {
+    width: 100%; padding: 11px 13px; border: 1px solid var(--border); border-radius: 10px;
+    font-family: var(--font-mono); font-size: 0.98rem; background: var(--bg); transition: border-color .15s, box-shadow .15s;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); background: var(--surface); }
+  .checkbox-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .checkbox-row input { width: auto; }
+  .hint { font-size: 0.76rem; color: var(--text3); margin-top: 6px; }
+  button.go {
+    background: var(--accent); color: #fff; border: none; padding: 11px 26px; border-radius: 8px; cursor: pointer;
+    font-size: 0.9rem; font-weight: 700; margin-top: 18px; font-family: inherit; letter-spacing: 0.01em;
+    box-shadow: 0 1px 2px rgba(7,60,56,.2); transition: background .15s, transform .1s;
+  }
+  button.go:hover { background: var(--accent-dark); }
+  button.go:active { transform: translateY(1px); }
+  button.go:disabled { background: #c9c2b4; cursor: not-allowed; box-shadow: none; }
+  .status { font-size: 0.85rem; color: var(--text2); margin-top: 10px; min-height: 1.2em; }
+  .price-hero { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  .price-number { font-family: var(--font-mono); font-size: 3rem; font-weight: 700; color: var(--accent-dark); font-variant-numeric: tabular-nums; }
+  .price-range { font-size: 0.9rem; color: var(--text3); }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 18px 0; }
+  .stat { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .stat .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text3); font-weight: 600; margin-bottom: 4px; }
+  .stat .value { font-family: var(--font-mono); font-size: 1.3rem; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+  .viz-grid { display: grid; grid-template-columns: 1fr 1.3fr; gap: 28px; align-items: start; }
+  @media (max-width: 760px) { .viz-grid { grid-template-columns: 1fr; } }
+  .viz-col h3 { font-family: var(--font-display); font-size: 0.98rem; margin: 0 0 10px; }
+  .answer-card { border-top: 3px solid var(--accent); }
+  .answer-text { font-size: 1.02rem; white-space: pre-wrap; }
+  .disclaimer { font-size: 0.78rem; color: var(--text3); font-style: italic; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border); }
+  .timeline-labels { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text3); margin-top: 2px; }
+  @media (max-width: 560px) {
+    .wrap { padding: 28px 18px 40px; }
+    h1 { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="topbar"></div>
+<div class="wrap" id="wrap">
+  <div class="brand">
+    <div class="brand-mark">PN</div>
+    <div>
+      <h1>Petrinets</h1>
+      <p class="tagline">A Petri-net room-pricing simulator</p>
+      <p class="subtitle">For small, independent hotels. Enter your current situation, get a transparent price suggestion grounded in a real stochastic simulation of booking demand - not a black box.</p>
+    </div>
+  </div>
+  <div class="scope-note">
+    This tool has no historical booking or pricing data behind it - the demand-model constants are documented, reasonable assumptions, not fitted to any real hotel's outcomes (see the project README). Treat the output as a transparent starting point for your own judgment, not a certified optimal price.
+  </div>
+
+  <div class="model-badge" id="modelBadge"><span class="dot"></span> ...</div>
+
+  <div class="card">
+    <div class="field-grid">
+      <div>
+        <label class="field-label" for="totalRooms">Total rooms</label>
+        <input type="number" id="totalRooms" value="20" min="1">
+      </div>
+      <div>
+        <label class="field-label" for="occupiedNow">Occupied now</label>
+        <input type="number" id="occupiedNow" value="10" min="0">
+      </div>
+      <div>
+        <label class="field-label" for="daysUntil">Days until arrival</label>
+        <input type="number" id="daysUntil" value="5" min="0">
+        <div class="hint">Capped at 60</div>
+      </div>
+      <div>
+        <label class="field-label" for="dayOfWeek">Day of week (arrival)</label>
+        <select id="dayOfWeek">
+          <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+          <option>Thursday</option><option selected>Friday</option><option>Saturday</option><option>Sunday</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label" for="floorPrice">Floor price</label>
+        <input type="number" id="floorPrice" value="80" min="0" step="0.01">
+      </div>
+      <div>
+        <label class="field-label" for="ceilingPrice">Ceiling price</label>
+        <input type="number" id="ceilingPrice" value="180" min="0" step="0.01">
+      </div>
+      <div>
+        <label class="field-label" for="competitorPrice">Competitor avg. price (optional)</label>
+        <input type="number" id="competitorPrice" placeholder="e.g. 150" min="0" step="0.01">
+      </div>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="localEvent">
+      <label for="localEvent" style="margin:0;font-size:0.9rem;color:var(--text2)">Local event / high season near the arrival date</label>
+    </div>
+    <button class="go" onclick="recommend()" id="goBtn">Get price suggestion</button>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div id="result"></div>
+</div>
+
+<script>
+const API = "/petrinets";
+
+function esc(s) { return (s || "").replace(/</g, "&lt;"); }
+
+function renderTimeline(trajectory, totalRooms) {
+  if (!trajectory || trajectory.length < 2) return '<p class="hint">Not enough simulated days to plot.</p>';
+  const w = 620, h = 140, pad = 30;
+  const n = trajectory.length;
+  const xAt = i => pad + (i / (n - 1)) * (w - 2 * pad);
+  const yAt = v => pad + (1 - v / totalRooms) * (h - 2 * pad);
+  const line = trajectory.map((p, i) => `${xAt(i).toFixed(1)},${yAt(p.mean_occupied).toFixed(1)}`).join(" ");
+  const dots = trajectory.map((p, i) => {
+    const x = xAt(i).toFixed(1), y = yAt(p.mean_occupied).toFixed(1);
+    return `<circle cx="${x}" cy="${y}" r="3" fill="var(--accent)"><title>${p.days_until}d until arrival: ${p.mean_occupied.toFixed(1)}/${totalRooms} occupied</title></circle>`;
+  }).join("");
+  return `
+    <svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="display:block">
+      <polyline points="${line}" fill="none" stroke="var(--accent)" stroke-width="2"/>
+      ${dots}
+    </svg>
+    <div class="timeline-labels"><span>${trajectory[0].days_until}d until arrival</span><span>arrival day</span></div>`;
+}
+
+async function errorText(res) {
+  try {
+    const body = await res.json();
+    return body.detail || JSON.stringify(body);
+  } catch {
+    return await res.text();
+  }
+}
+
+async function loadConfig() {
+  try {
+    const cfg = await (await fetch(`${API}/config`)).json();
+    document.getElementById("modelBadge").innerHTML = `<span class="dot"></span> Active AI model: ${cfg.provider} / ${cfg.model}`;
+  } catch {
+    document.getElementById("modelBadge").textContent = "";
+  }
+}
+
+async function recommend() {
+  const body = {
+    total_rooms: parseInt(document.getElementById("totalRooms").value) || 1,
+    occupied_now: parseInt(document.getElementById("occupiedNow").value) || 0,
+    days_until: parseInt(document.getElementById("daysUntil").value) || 0,
+    day_of_week: document.getElementById("dayOfWeek").value,
+    local_event: document.getElementById("localEvent").checked,
+    floor_price: parseFloat(document.getElementById("floorPrice").value) || 0,
+    ceiling_price: parseFloat(document.getElementById("ceilingPrice").value) || 0,
+  };
+  const comp = document.getElementById("competitorPrice").value;
+  if (comp) body.competitor_price = parseFloat(comp);
+
+  const statusEl = document.getElementById("status");
+  const btn = document.getElementById("goBtn");
+  btn.disabled = true;
+  statusEl.textContent = "Running the simulation and asking the configured LLM to explain it - this can take 15-40s...";
+  document.getElementById("result").innerHTML = "";
+
+  try {
+    const res = await fetch(`${API}/recommend`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      statusEl.textContent = "Error: " + await errorText(res);
+      return;
+    }
+    const data = await res.json();
+    statusEl.textContent = "";
+    const rec = data.recommendation;
+    const sim = rec.simulation;
+
+    const heroHtml = `
+      <div class="card">
+        <div class="price-hero">
+          <div class="price-number">${rec.recommended_price.toFixed(2)}</div>
+          <div class="price-range">floor ${rec.floor_price.toFixed(2)} &middot; ceiling ${rec.ceiling_price.toFixed(2)}</div>
+        </div>
+        <div class="stat-grid">
+          <div class="stat"><div class="label">Expected occupancy</div><div class="value">${(rec.final_occupancy_rate*100).toFixed(0)}%</div></div>
+          <div class="stat"><div class="label">10th percentile</div><div class="value">${(sim.final_occupancy_rate_p10*100).toFixed(0)}%</div></div>
+          <div class="stat"><div class="label">90th percentile</div><div class="value">${(sim.final_occupancy_rate_p90*100).toFixed(0)}%</div></div>
+          <div class="stat"><div class="label">Simulation runs</div><div class="value">${sim.n_runs}</div></div>
+        </div>
+      </div>`;
+
+    const vizHtml = `
+      <div class="card">
+        <div class="viz-col">
+          <h3>Simulated occupied rooms across the booking window (real, per Monte Carlo mean)</h3>
+          ${renderTimeline(sim.trajectory, sim.total_rooms)}
+        </div>
+        <p class="hint" style="margin-top:14px">This is the actual simulated Petri-net trajectory at the recommended price - not a fabricated confidence curve.</p>
+      </div>`;
+
+    const answerHtml = data.rationale ? `
+      <div class="card answer-card">
+        <div class="answer-text">${esc(data.rationale.text)}</div>
+        <div class="disclaimer">Simulation-based heuristic, not a certified optimal price. Use your own judgment alongside it.</div>
+      </div>` : "";
+
+    document.getElementById("result").innerHTML = heroHtml + vizHtml + answerHtml;
+    document.getElementById("wrap").classList.add("wide");
+  } catch (e) {
+    statusEl.textContent = "Error: " + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+loadConfig();
+</script>
+</body>
+</html>

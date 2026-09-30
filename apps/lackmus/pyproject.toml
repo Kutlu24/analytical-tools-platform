@@ -1,0 +1,35 @@
+[project]
+name = "lackmus"
+version = "0.1.0"
+description = "Backend for Financial Compass (Lackmus): extracts balance-sheet fields from an uploaded PDF or image so the existing client-side ratio calculator can run on them"
+requires-python = ">=3.11,<4.0"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "httpx>=0.27",
+    "pydantic>=2.6",
+    "pydantic-settings>=2.2",
+    "python-dotenv>=1.0",
+    "python-multipart>=0.0.9",
+    "openai>=1.50",
+    "google-genai>=1.0",
+    "pymupdf>=1.24",
+    # Validated structured extraction (extraction/fields.py's
+    # ExtractedFinancials, extraction/text_extract.py + vision_extract.py) -
+    # replaces the old hand-rolled JSON-fence-stripping parser with schema
+    # validation and automatic retry-with-error-feedback.
+    # [google-genai] extra pulls in jsonref, required for
+    # Mode.GENAI_STRUCTURED_OUTPUTS in vision_extract.py - omitting it fails
+    # at call time, not at import time, so it's easy to miss without this.
+    "instructor[google-genai]>=1.17",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

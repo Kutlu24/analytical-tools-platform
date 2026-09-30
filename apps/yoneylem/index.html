@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="pageTitle">Optimizasyon Merkezi - Yöneylem Araştırması</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500;7..72,600;7..72,700&family=Manrope:wght@400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <header>
+        <div class="lang-toggle" role="group" aria-label="Language">
+            <button type="button" data-lang-btn="tr" class="lang-btn active">TR</button>
+            <button type="button" data-lang-btn="en" class="lang-btn">EN</button>
+        </div>
+        <h1 data-i18n="brand">Optimizasyon Merkezi</h1>
+        <p data-i18n="tagline">Karar Vermeyi Bilimselleştirin!</p>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="#genel-bakis" data-i18n="navOverview">Genel Bakış</a></li>
+            <li><a href="#cozucu" data-i18n="navSolver">Problem Çözücü</a></li>
+            <li><a href="#teknikler" data-i18n="navTechniques">Teknikler</a></li>
+            <li><a href="#uygulama-alanlari" data-i18n="navApplications">Uygulama Alanları</a></li>
+            <li><a href="#araclar" data-i18n="navTools">Araçlar</a></li>
+            <li><a href="#kaynaklar" data-i18n="navResources">Kaynaklar</a></li>
+            <li><a href="#topluluk" data-i18n="navCommunity">Topluluk</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section id="genel-bakis">
+            <h2 data-i18n="navOverview">Genel Bakış</h2>
+            <p data-i18n="overviewP1">Yöneylem araştırması (YA), karar verme süreçlerini iyileştirmek için matematiksel ve analitik yöntemlerin kullanıldığı bir disiplindir. İkinci Dünya Savaşı sırasında lojistik ve askeri planlama problemleri için geliştirilen yöntemler, günümüzde üretim planlama, ulaştırma, stok yönetimi, çizelgeleme ve kaynak tahsisi gibi pek çok alanda kullanılıyor.</p>
+            <p data-i18n="overviewP2">Bu sayfa, YA'nın dört temel tekniğine (doğrusal programlama, tamsayılı programlama, kuyruk teorisi, benzetim) kısa, matematiksel olarak doğru bir giriş sunar.</p>
+
+            <div class="lp-figure" aria-hidden="true">
+                <svg viewBox="0 0 320 230" role="img" aria-label="Feasible region of a two-variable linear program">
+                    <line x1="40" y1="190" x2="300" y2="190" class="lp-axis"/>
+                    <line x1="40" y1="190" x2="40" y2="20" class="lp-axis"/>
+                    <text x="292" y="205" class="lp-axis-label">x&#8321;</text>
+                    <text x="14" y="26" class="lp-axis-label">x&#8322;</text>
+                    <polygon points="40,190 230,190 170,90 90,50 40,110" class="lp-region"/>
+                    <line x1="40" y1="190" x2="230" y2="190" class="lp-constraint"/>
+                    <line x1="230" y1="190" x2="170" y2="90" class="lp-constraint"/>
+                    <line x1="170" y1="90" x2="90" y2="50" class="lp-constraint"/>
+                    <line x1="90" y1="50" x2="40" y2="110" class="lp-constraint"/>
+                    <circle cx="170" cy="90" r="4.5" class="lp-optimum"/>
+                    <text x="180" y="82" class="lp-optimum-label" data-i18n="lpFigureOptimum">optimum</text>
+                    <line x1="235" y1="40" x2="205" y2="70" class="lp-gradient" marker-end="url(#lpArrow)"/>
+                    <text x="238" y="36" class="lp-gradient-label" data-i18n="lpFigureObjective">z artış yönü</text>
+                    <defs>
+                        <marker id="lpArrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                            <path d="M0,0 L8,4 L0,8 Z" class="lp-arrowhead"/>
+                        </marker>
+                    </defs>
+                </svg>
+                <p class="lp-figure-caption" data-i18n="lpFigureCaption">İki değişkenli bir doğrusal programda, kısıtların oluşturduğu gölgeli olurlu bölge (feasible region) ve amaç fonksiyonunun en iyi değeri aldığı köşe noktası (optimum).</p>
+            </div>
+        </section>
+
+        <section id="cozucu">
+            <h2 data-i18n="navSolver">Problem Çözücü</h2>
+            <p class="cozucu-aciklama" data-i18n="solverIntro">
+                Problemini kendi cümlelerinle anlat - doğrusal/tamsayılı programlama (kâr/maliyet
+                maksimize/minimize etme, kaynak kısıtları) veya kuyruk teorisi (varış/hizmet oranı,
+                bekleme süresi) sorularını gerçek bir çözücü (PuLP/CBC) ve gerçek formüllerle
+                çözer - cevap bir tahmin değil, gerçek hesaplanmış bir sonuçtur.
+            </p>
+            <div id="modelBadge" class="model-badge"></div>
+            <div class="cozucu-form">
+                <textarea id="cozucuSoru" rows="4" data-i18n-placeholder="solverPlaceholder" placeholder="Örn: Bir fabrika iki ürün üretiyor... / Bir gişeye saatte ortalama 2 müşteri geliyor, hizmet oranı 5..."></textarea>
+                <button id="cozucuBtn" onclick="cozProblemi()" data-i18n="solverButton">Çöz</button>
+                <div id="cozucuDurum" class="cozucu-durum"></div>
+            </div>
+            <div id="cozucuSonuc"></div>
+        </section>
+
+        <section id="teknikler">
+            <h2 data-i18n="navTechniques">Teknikler</h2>
+
+            <div class="teknik-kategorileri">
+                <button data-kategori="dogrusal-programlama" data-i18n="techLP">Doğrusal Programlama</button>
+                <button data-kategori="tamsayili-programlama" data-i18n="techIP">Tamsayılı Programlama</button>
+                <button data-kategori="kuyruk-teorisi" data-i18n="techQueue">Kuyruk Teorisi</button>
+                <button data-kategori="benzetim" data-i18n="techSim">Benzetim</button>
+            </div>
+
+            <div id="teknik-icerik">
+                <!-- Populated dynamically by script.js, per the active language -->
+            </div>
+        </section>
+
+        <section id="uygulama-alanlari">
+            <h2 data-i18n="navApplications">Uygulama Alanları</h2>
+            <ul class="uygulama-listesi" data-i18n-html="applicationsList">
+                <li><strong>Üretim planlama:</strong> Sınırlı makine/işgücü kapasitesiyle üretim karmasını optimize etme.</li>
+                <li><strong>Ulaştırma ve lojistik:</strong> Depo-müşteri arası en düşük maliyetli sevkiyat planı (taşıma problemi).</li>
+                <li><strong>Stok yönetimi:</strong> Sipariş miktarı ve zamanlamasını, elde bulundurma ve sipariş maliyetlerini dengeleyerek belirleme.</li>
+                <li><strong>Personel çizelgeleme:</strong> Vardiya/talep kısıtları altında en az sayıda personelle hizmet düzeyini karşılama.</li>
+                <li><strong>Hizmet sistemleri:</strong> Çağrı merkezi, banka gişesi, acil servis gibi sistemlerde bekleme süresi ve kapasite planlaması.</li>
+            </ul>
+        </section>
+
+        <section id="araclar">
+            <h2 data-i18n="navTools">Araçlar</h2>
+            <ul class="arac-listesi" data-i18n-html="toolsList">
+                <li><strong>Solver çözücüler:</strong> CPLEX, Gurobi, CBC — büyük ölçekli DP/TP problemleri için endüstri standardı çözücüler.</li>
+                <li><strong>Python:</strong> <code>PuLP</code> ve <code>Pyomo</code> kütüphaneleri ile modelleme; <code>SimPy</code> ile olay-güdümlü benzetim.</li>
+                <li><strong>R:</strong> <code>lpSolve</code> ve <code>ompr</code> paketleri ile doğrusal/tamsayılı programlama.</li>
+                <li><strong>Elektronik tablo:</strong> Excel Solver eklentisi — küçük ölçekli DP problemleri için hızlı bir başlangıç noktası.</li>
+            </ul>
+        </section>
+
+        <section id="kaynaklar">
+            <h2 data-i18n="navResources">Kaynaklar</h2>
+            <ul class="kaynak-listesi" data-i18n-html="resourcesList">
+                <li>
+                    <a href="https://neos-guide.org/" target="_blank" rel="noopener">NEOS Guide to Optimization</a>
+                    <span>Optimizasyon problemi türlerine ve çözüm yöntemlerine genel bakış.</span>
+                </li>
+                <li>
+                    <a href="https://www.informs.org/" target="_blank" rel="noopener">INFORMS</a>
+                    <span>Yöneylem araştırması ve yönetim bilimleri alanının uluslararası meslek kuruluşu.</span>
+                </li>
+                <li>
+                    <a href="https://coin-or.github.io/pulp/" target="_blank" rel="noopener">PuLP Dokümantasyonu</a>
+                    <span>Python ile doğrusal/tamsayılı programlama modelleme kütüphanesi.</span>
+                </li>
+            </ul>
+        </section>
+
+        <section id="topluluk">
+            <h2 data-i18n="navCommunity">Topluluk</h2>
+            <p data-i18n-html="communityP">Bu site şu an bağımsız bir statik sayfa olduğu için kendi forum altyapısı yok. Sorularınız için <a href="https://or.stackexchange.com/" target="_blank" rel="noopener">Operations Research Stack Exchange</a> topluluğunu öneririz.</p>
+        </section>
+    </main>
+
+    <footer>
+        <p data-i18n="footer">© 2024 Optimizasyon Merkezi</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
