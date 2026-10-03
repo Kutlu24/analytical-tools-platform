@@ -7,6 +7,7 @@ Endpoints:
 """
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -20,10 +21,42 @@ from ..llm.rationale import Rationale, explain
 from ..pricing import PriceRecommendation, recommend_price
 from .errors import friendly_error
 
+def _allowed_origins() -> list[str]:
+    """CORS allowlist: ALLOWED_ORIGINS env (comma-separated) plus this
+    service's RENDER_EXTERNAL_URL; localhost only when not on Render."""
+    origins = [
+        o.strip()
+        for o in os.environ.get("ALLOWED_ORIGINS", "").split(",")
+        if o.strip()
+    ]
+    render_url = os.environ.get("RENDER_EXTERNAL_URL")
+    if render_url and render_url not in origins:
+        origins.append(render_url)
+    if not render_url and not origins:
+        origins = [
+            "http://localhost:8000",
+            "http://127.0.0.1:8000",
+            "http://localhost:5173",
+        ]
+    return origins
+
+
 app = FastAPI(title="Petrinets - Hotel Pricing Simulator")
 app.add_middleware(
-    CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
+    CORSMiddleware, allow_origins=_allowed_origins(), allow_methods=["*"], allow_headers=["*"]
 )
+
+
+@app.middleware("http")
+async def _security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault(
+        "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+    )
+    return response
 
 
 @app.get("/", include_in_schema=False)
