@@ -364,9 +364,11 @@ async function cozProblemi() {
 
         if (data.problem_type === "lp" && data.lp_solution) {
             sonucEl.innerHTML = renderLpSonuc(data.lp_solution) +
+                ((window.OrViz && data.lp_problem && data.lp_solution.status === "Optimal") ? OrViz.lpFigure(data.lp_problem, data.lp_solution) : "") +
                 `<div class="sonuc-aciklama">${data.explanation.replace(/\n/g, "<br>")}</div>`;
         } else if (data.problem_type === "queueing" && data.queueing_result) {
             sonucEl.innerHTML = renderQueueSonuc(data.queueing_result) +
+                ((window.OrViz && data.queueing_params) ? OrViz.queueFigure(data.queueing_params, data.queueing_result) : "") +
                 `<div class="sonuc-aciklama">${data.explanation.replace(/\n/g, "<br>")}</div>`;
         } else {
             sonucEl.innerHTML = `<div class="sonuc-kutusu sonuc-uyari"><div class="sonuc-satir">${data.clarification_needed}</div></div>`;

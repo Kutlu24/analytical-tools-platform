@@ -85,6 +85,17 @@
     .wrap { padding: 28px 18px 40px; }
     h1 { font-size: 1.5rem; }
   }
+
+  .net-wrap { margin-top: 6px; }
+  .net-svg text { font-family: var(--font-body); fill: var(--text2); font-size: 12px; }
+  .net-svg .pl-name { font-weight: 700; fill: var(--text); font-size: 13px; }
+  .net-svg .pl-count { font-family: var(--font-mono); font-weight: 700; font-size: 15px; fill: var(--text); }
+  .net-ctl { display: flex; align-items: center; gap: 12px; margin: 10px 0 2px; flex-wrap: wrap; }
+  .net-ctl input[type=range] { flex: 1 1 200px; width: auto; padding: 0; accent-color: var(--accent); }
+  .net-ctl button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 7px 16px; cursor: pointer; font-size: .9rem; }
+  .net-day { font-family: var(--font-mono); font-size: .85rem; color: var(--text2); min-width: 170px; }
+  .net-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .8rem; color: var(--text2); margin-top: 8px; }
+  .net-legend i { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px; border-radius: 3px; }
 </style>
 </head>
 <body>
@@ -174,6 +185,89 @@ function renderTimeline(trajectory, totalRooms) {
     <div class="timeline-labels"><span>${trajectory[0].days_until}d until arrival</span><span>arrival day</span></div>`;
 }
 
+
+const PLACE_COL = { available: "#0e5c56", pending: "#b8863a", confirmed: "#a3402f" };
+const PLACE_TR = { available: "Müsait", pending: "Bekleyen", confirmed: "Onaylı (dolu)" };
+
+function netDiagram() {
+  const pos = { available: [90, 120], pending: [300, 120], confirmed: [510, 120] };
+  const tr = {
+    T_request: [195, 120, "T_request", "talep gelir"], T_confirm: [405, 120, "T_confirm", "onay / ödeme"],
+    T_reject: [195, 230, "T_reject", "talep düşer"], T_cancel: [300, 296, "T_cancel", "iptal"],
+  };
+  const arrow = '<defs><marker id="nArr" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#5c5346"/></marker></defs>';
+  const ln = (a, b, c, d) => `<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="#5c5346" stroke-width="1.6" marker-end="url(#nArr)"/>`;
+  let g = `<svg class="net-svg" id="netSvg" viewBox="0 54 600 302" width="100%" style="max-width:640px;display:block;margin:0 auto" role="img" aria-label="Rezervasyon Petri ağı">${arrow}`;
+  // arcs: place -> transition -> place
+  g += ln(122, 120, 183, 120) + ln(207, 120, 268, 120) + ln(332, 120, 393, 120) + ln(417, 120, 478, 120);
+  g += ln(282, 148, 205, 218) + ln(185, 218, 108, 148);               // pending -> T_reject -> available
+  const cur = (d) => `<path d="${d}" fill="none" stroke="#5c5346" stroke-width="1.6" marker-end="url(#nArr)"/>`;
+  g += cur("M510,156 Q510,296 314,296") + cur("M286,296 Q90,296 90,158");   // confirmed -> T_cancel -> available
+  Object.values(tr).forEach(([x, y, n, d]) => {
+    g += `<rect x="${x - 12}" y="${y - 22}" width="24" height="44" rx="3" fill="#241c14"/><text x="${x}" y="${y - 30}" text-anchor="middle" class="pl-name">${n}</text><text x="${x}" y="${y + 38}" text-anchor="middle">${d}</text>`;
+  });
+  Object.entries(pos).forEach(([k, [x, y]]) => {
+    g += `<circle cx="${x}" cy="${y}" r="34" fill="#fff" stroke="${PLACE_COL[k]}" stroke-width="3"/><text x="${x}" y="${y - 46}" text-anchor="middle" class="pl-name">${PLACE_TR[k]}: <tspan id="cnt_${k}" class="pl-count"></tspan></text><g id="tok_${k}"></g>`;
+  });
+  return g + "</svg>";
+}
+
+function setMarking(day, total) {
+  const occ = day.mean_occupied, av = day.mean_available, pend = Math.max(0, total - occ - av);
+  const vals = { available: av, pending: pend, confirmed: occ };
+  const pos = { available: [90, 120], pending: [300, 120], confirmed: [510, 120] };
+  Object.entries(vals).forEach(([k, v]) => {
+    const [cx, cy] = pos[k], n = Math.min(12, Math.round(v));
+    let dots = "";
+    for (let i = 0; i < n; i++) {   // up to 12 tokens, on two rings inside the place
+      const ring = i < 6 ? 0 : 1, m = ring ? n - 6 : Math.min(n, 6), j = ring ? i - 6 : i;
+      const rad = n <= 1 ? 0 : ring ? 21 : (n <= 6 ? 14 : 12), ang = (2 * Math.PI * j) / Math.max(m, 1) + ring * 0.5;
+      dots += `<circle cx="${(cx + rad * Math.cos(ang)).toFixed(1)}" cy="${(cy + rad * Math.sin(ang)).toFixed(1)}" r="4.6" fill="${PLACE_COL[k]}"/>`;
+    }
+    document.getElementById("tok_" + k).innerHTML = dots;
+    document.getElementById("cnt_" + k).textContent = (Math.round(v * 10) / 10).toFixed(1) + (v > 12 ? " (12 jeton çizili)" : "");
+  });
+}
+
+function stackedArea(traj, total) {
+  const w = 620, h = 170, pad = 34, n = traj.length;
+  const x = (i) => pad + (i / (n - 1)) * (w - 2 * pad), y = (v) => h - 24 - (v / total) * (h - 24 - 10);
+  const layer = (lo, hi, col) => {
+    const top = traj.map((p, i) => `${x(i).toFixed(1)},${y(hi(p)).toFixed(1)}`);
+    const bot = traj.map((p, i) => `${x(i).toFixed(1)},${y(lo(p)).toFixed(1)}`).reverse();
+    return `<polygon points="${top.concat(bot).join(" ")}" fill="${col}" fill-opacity=".8"/>`;
+  };
+  const occ = (p) => p.mean_occupied, pend = (p) => Math.max(0, total - p.mean_occupied - p.mean_available);
+  let g = `<svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="Jeton dağılımı zaman içinde" style="display:block">`;
+  g += layer(() => 0, occ, PLACE_COL.confirmed) + layer(occ, (p) => occ(p) + pend(p), PLACE_COL.pending) + layer((p) => occ(p) + pend(p), () => total, PLACE_COL.available);
+  [0, 0.5, 1].forEach((t) => (g += `<text x="4" y="${y(t * total) + 4}" font-size="11" fill="#948a79">${Math.round(t * total)}</text>`));
+  g += `<line id="areaCursor" x1="${x(0)}" x2="${x(0)}" y1="8" y2="${h - 24}" stroke="#241c14" stroke-width="1.5"/>`;
+  g += `<text x="${pad}" y="${h - 6}" font-size="11" fill="#948a79">${traj[0].days_until} gün kala</text><text x="${w - pad}" y="${h - 6}" text-anchor="end" font-size="11" fill="#948a79">varış günü</text></svg>`;
+  return g;
+}
+
+let netTimer = null;
+function bindNet(traj, total) {
+  const rng = document.getElementById("netRange"), lbl = document.getElementById("netDay"), btn = document.getElementById("netPlay");
+  const show = (i) => {
+    setMarking(traj[i], total);
+    lbl.textContent = traj[i].days_until === 0 ? "varış günü" : `${traj[i].days_until} gün kala`;
+    const cur = document.getElementById("areaCursor");
+    if (cur) { const xx = 34 + (i / (traj.length - 1)) * (620 - 68); cur.setAttribute("x1", xx); cur.setAttribute("x2", xx); }
+  };
+  rng.max = traj.length - 1; rng.value = 0; show(0);
+  rng.oninput = () => { clearInterval(netTimer); btn.textContent = "Oynat"; show(+rng.value); };
+  btn.onclick = () => {
+    if (netTimer) { clearInterval(netTimer); netTimer = null; btn.textContent = "Oynat"; return; }
+    if (+rng.value >= traj.length - 1) rng.value = 0;
+    btn.textContent = "Durdur";
+    netTimer = setInterval(() => {
+      rng.value = +rng.value + 1; show(+rng.value);
+      if (+rng.value >= traj.length - 1) { clearInterval(netTimer); netTimer = null; btn.textContent = "Oynat"; }
+    }, 450);
+  };
+}
+
 async function errorText(res) {
   try {
     const body = await res.json();
@@ -240,6 +334,18 @@ async function recommend() {
         </div>
       </div>`;
 
+    const netHtml = `
+      <div class="card">
+        <div class="viz-col">
+          <h3>Rezervasyon Petri ağı: jetonlar günden güne nasıl akıyor</h3>
+          <div class="net-wrap">${netDiagram()}</div>
+          <div class="net-ctl"><button id="netPlay" type="button">Oynat</button><input type="range" id="netRange" min="0" max="1" value="0" aria-label="Gün"><span class="net-day" id="netDay"></span></div>
+          <div class="net-legend"><span><i style="background:${PLACE_COL.available}"></i>müsait oda-gecesi</span><span><i style="background:${PLACE_COL.pending}"></i>bekleyen talep</span><span><i style="background:${PLACE_COL.confirmed}"></i>onaylı rezervasyon</span></div>
+          <div style="margin-top:14px">${stackedArea(sim.trajectory, sim.total_rooms)}</div>
+          <p class="hint" style="margin-top:10px">Sayılar ${sim.n_runs} Monte Carlo koşusunun ortalamasıdır; her yuvarlak bir jeton (oda-gecesi). Kare geçişler ateşlendiğinde jeton yer değiştirir. Bekleyen sayısı = toplam − müsait − onaylı.</p>
+        </div>
+      </div>`;
+
     const vizHtml = `
       <div class="card">
         <div class="viz-col">
@@ -255,7 +361,8 @@ async function recommend() {
         <div class="disclaimer">Simulation-based heuristic, not a certified optimal price. Use your own judgment alongside it.</div>
       </div>` : "";
 
-    document.getElementById("result").innerHTML = heroHtml + vizHtml + answerHtml;
+    document.getElementById("result").innerHTML = heroHtml + netHtml + vizHtml + answerHtml;
+    bindNet(sim.trajectory, sim.total_rooms);
     document.getElementById("wrap").classList.add("wide");
   } catch (e) {
     statusEl.textContent = "Error: " + e.message;

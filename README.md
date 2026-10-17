@@ -13,6 +13,12 @@ sub-app mounted under its prefix, so its `/docs`, `/config` and tool-specific
 endpoints stay intact (e.g. `/yoneylem/solve`, `/finans/api/extract-balance-sheet`,
 `/petrinets/recommend`).
 
+## Visual output
+
+- Operations Research Center: two-variable LPs draw the feasible region, numbered constraints, the objective line and the optimum (integer problems also show lattice points); three or more variables get a bar chart; queueing shows a utilization gauge and a Wq-vs-servers (M/M/c) or L-vs-rho (M/M/1) curve. `/yoneylem/solve` now also returns `lp_problem` and `queueing_params`.
+- Petri-net pricing: the booking net (places, transitions, tokens) is drawn and can be stepped or played day by day, with a stacked area of available / pending / confirmed rooms.
+- Financial Compass already had Chart.js charts and is unchanged.
+
 ## Local development
 
 ```bash

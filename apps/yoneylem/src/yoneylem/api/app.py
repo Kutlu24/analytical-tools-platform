@@ -88,7 +88,9 @@ class SolveResponse(BaseModel):
     problem_type: str
     explanation: str | None = None
     lp_solution: dict | None = None
+    lp_problem: dict | None = None  # the parsed formulation, so the UI can draw it
     queueing_result: dict | None = None
+    queueing_params: dict | None = None
     clarification_needed: str | None = None
 
 
@@ -104,6 +106,7 @@ def solve(req: SolveRequest) -> SolveResponse:
             problem_type="lp",
             explanation=explanation,
             lp_solution=solution.model_dump(),
+            lp_problem=parsed.lp.model_dump(),
         )
 
     if parsed.problem_type == "queueing" and parsed.queueing is not None:
@@ -113,6 +116,7 @@ def solve(req: SolveRequest) -> SolveResponse:
             problem_type="queueing",
             explanation=explanation,
             queueing_result=result.model_dump(),
+            queueing_params=parsed.queueing.model_dump(),
         )
 
     fallback = (

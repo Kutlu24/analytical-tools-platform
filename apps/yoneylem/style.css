@@ -252,3 +252,17 @@ footer {
     padding: 14px;
     font-size: 0.9rem;
 }
+
+/* solver figures */
+.viz-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-top: 14px; }
+.viz-title { font-family: var(--font-display); font-weight: 600; margin-bottom: 8px; }
+.viz-svg { display: block; max-width: 560px; margin: 0 auto; }
+.viz-t { font-size: 11px; fill: var(--ink-soft); font-family: var(--font-body); }
+.viz-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.82rem; color: var(--ink-soft); margin-top: 8px; }
+.viz-legend i { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px; }
+.viz-gauge-track { position: relative; height: 12px; background: var(--border); border-radius: 6px; overflow: hidden; }
+.viz-gauge-track div { height: 100%; border-radius: 6px; }
+.viz-gauge-track span { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--ink); }
+.viz-gauge-label { margin-bottom: 6px; }
+.viz-gauge-note { font-size: 0.8rem; color: var(--ink-soft); margin: 4px 0 12px; }
+.viz-halo { paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
