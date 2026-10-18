@@ -5,9 +5,8 @@ message; not re-run here since that would require live API keys in CI)."""
 from __future__ import annotations
 
 import pytest
-from pydantic import ValidationError
-
 from lackmus.extraction.fields import FIELD_IDS, ExtractedFinancials, to_fields_dict
+from pydantic import ValidationError
 
 
 def test_all_field_ids_present_as_model_fields():

@@ -12,7 +12,7 @@ dependencies = [
     "python-dotenv>=1.0",
     "openai>=1.50",
     "google-genai>=1.0",
-    "pulp>=2.8",
+    "pulp>=2.8,<4",
 ]
 
 [build-system]

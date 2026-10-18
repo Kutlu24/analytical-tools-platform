@@ -21,6 +21,7 @@ from ..lp_solver import solve_lp
 from ..parser import parse_problem
 from ..queueing import solve_queueing
 
+
 def _allowed_origins() -> list[str]:
     """CORS allowlist: ALLOWED_ORIGINS env (comma-separated) plus this
     service's RENDER_EXTERNAL_URL; localhost only when not on Render."""

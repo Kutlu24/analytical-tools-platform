@@ -118,7 +118,7 @@ def _build_extracted_model() -> type[ExtractedFinancials]:
     )
 
 
-ExtractedFinancials = _build_extracted_model()
+ExtractedFinancials = _build_extracted_model()  # noqa: F811 (intentional: base class extended with the dynamic fields)
 
 
 def to_fields_dict(result: ExtractedFinancials) -> dict[str, float]:

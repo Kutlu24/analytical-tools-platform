@@ -18,7 +18,6 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-
 from lackmus.api.app import app as lackmus_app
 from petrinets.api.app import app as petrinets_app
 from yoneylem.api.app import app as yoneylem_app

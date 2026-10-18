@@ -12,14 +12,14 @@ dependencies = [
     "python-dotenv>=1.0",
     "openai>=1.50",
     "google-genai>=1.0",
-    "pulp>=2.8",
+    "pulp>=2.8,<4",
     "python-multipart>=0.0.9",
     "pymupdf>=1.24",
     "instructor[google-genai]>=1.17",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+dev = ["pytest>=8.0", "ruff>=0.6"]
 
 [build-system]
 requires = ["setuptools>=68"]
@@ -27,3 +27,15 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src", "apps/yoneylem/src", "apps/lackmus/src", "apps/petrinets/src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "apps/lackmus/tests"]
+filterwarnings = ["ignore::DeprecationWarning:pulp.*"]
+
+[tool.ruff]
+line-length = 120
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+ignore = ["E501"]
