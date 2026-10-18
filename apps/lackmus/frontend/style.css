@@ -781,3 +781,6 @@ body {
     body { background: white; color: black; }
     .report-body { border: none; padding: 0; }
 }
+
+/* Pure-SVG visuals (viz.js) */
+.fc-svg { width: 100%; height: auto; display: block; }

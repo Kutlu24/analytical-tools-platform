@@ -833,6 +833,11 @@ function renderCharts() {
         }
     });
 
+    if (window.FcViz) {
+        FcViz.dupont(document.getElementById('vizDupont'), rasyolar);
+        FcViz.bands(document.getElementById('vizBands'), rasyolar);
+    }
+
     // Radar
     destroyChart('chartRadar');
     const ctxR = document.getElementById('chartRadar').getContext('2d');
