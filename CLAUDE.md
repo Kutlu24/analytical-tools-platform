@@ -22,6 +22,6 @@ Hub page: `src/atp/static/`. Deployed as one Render web service (`render.yaml`).
 - **Vendored apps**: the three `apps/*` were copied in. Local changes versus upstream: API prefixes in the frontends (`/yoneylem`, `/finans/api/...`, `/petrinets`) and relative `/ui` redirects. Keep new edits additive.
 - **Solver response contract**: `/yoneylem/solve` returns `lp_problem` and `queueing_params` next to the results; `apps/yoneylem/viz.js` draws from them.
 - **Security**: CORS is an allowlist (no wildcard) and security headers are set per app; never commit `.env`; API keys are Render dashboard variables.
-- **Git**: commits must use the GitHub noreply email (`201714311+Kutlu24@users.noreply.github.com`); the real address is rejected by GitHub email privacy. Repo `Kutlu24/analytical-tools-platform` is private.
+- **Git**: commits must use the GitHub noreply email (`201714311+Kutlu24@users.noreply.github.com`); the real address is rejected by GitHub email privacy. Repo `Kutlu24/analytical-tools-platform` is PUBLIC on GitHub (checked 2026-10-18), so never commit secrets.
 - Petri simulation records end-of-day markings, so the "pending" place is always ~0 in the UI; that is the data, not a bug.
 - **GEO/SEO**: hub serves `/robots.txt`, `/sitemap.xml`, `/llms.txt` (in `src/atp/app.py`); base URL comes from `SITE_URL` env or the request. Hub HTML uses a `__SITE__` placeholder. Each tool page has static meta, JSON-LD and an `#about` section (needed because most AI crawlers do not run JS). Training bots are blocked, search bots allowed (`_ALLOW`/`_BLOCK`).
