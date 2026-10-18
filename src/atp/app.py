@@ -32,8 +32,15 @@ app = FastAPI(
 
 
 def _site(request: Request) -> str:
-    """Public base URL: SITE_URL env var if set, else the request's own origin."""
-    return (os.environ.get("SITE_URL") or str(request.base_url)).rstrip("/")
+    """Public base URL: SITE_URL env var if set, else the (proxy-forwarded) request origin, https off localhost."""
+    env = os.environ.get("SITE_URL")
+    if env:
+        return env.rstrip("/")
+    host = request.headers.get("x-forwarded-host") or request.url.netloc
+    proto = request.headers.get("x-forwarded-proto") or request.url.scheme
+    if host.split(":")[0] not in ("localhost", "127.0.0.1", "testserver"):
+        proto = "https"
+    return f"{proto}://{host}"
 
 
 _TOOL_PATHS = ("/", "/yoneylem/ui/", "/finans/ui/", "/petrinets/ui/")
