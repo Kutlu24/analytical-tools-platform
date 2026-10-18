@@ -3,7 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Petrinets</title>
+<title>Hotel Pricing Simulator: Petri-Net Booking Simulation</title>
+<meta name="description" content="Free hotel room pricing tool: a Petri-net booking simulation with Monte Carlo runs drives a transparent price recommendation.">
+<meta property="og:title" content="Hotel Pricing Simulator: Petri-Net Booking Simulation">
+<meta property="og:description" content="Free hotel room pricing tool: a Petri-net booking simulation with Monte Carlo runs drives a transparent price recommendation.">
+<meta property="og:type" content="website">
+<script type="application/ld+json">[{"@context": "https://schema.org", "@type": "WebApplication", "name": "Hotel Pricing Simulator", "description": "Free hotel room pricing tool: a Petri-net booking simulation with Monte Carlo runs drives a transparent price recommendation.", "applicationCategory": "BusinessApplication", "operatingSystem": "Any (web browser)", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How does the pricing simulator work?", "acceptedAnswer": {"@type": "Answer", "text": "A Petri net models booking demand: rooms move between available, pending and confirmed places as bookings arrive and cancel. Many Monte Carlo runs give expected occupancy, and the price is interpolated within a set band from that occupancy."}}, {"@type": "Question", "name": "Does the AI set the price?", "acceptedAnswer": {"@type": "Answer", "text": "No. Simulation and price interpolation are deterministic code. A language model only writes the plain-language rationale."}}, {"@type": "Question", "name": "Why a Petri net for hotel bookings?", "acceptedAnswer": {"@type": "Answer", "text": "Petri nets make resource states and transitions explicit, so token conservation (no room is created or lost) and each firing rule can be checked."}}]}]</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -161,6 +167,7 @@
   <div id="result"></div>
 </div>
 
+<style>.seo-about{max-width:860px;margin:2.5rem auto;padding:1.25rem 1.5rem;border-top:1px solid rgba(128,128,128,.35);font:15px/1.6 system-ui,sans-serif;opacity:.9}.seo-about h2{font-size:1.15rem;margin:0 0 .5rem}.seo-about h3{font-size:1rem;margin:1rem 0 .25rem}.seo-about p,.seo-about li{margin:.25rem 0}</style><section class="seo-about" id="about"><h2>About the Hotel Pricing Simulator</h2><p>A free tool that simulates hotel booking demand with a Petri net and recommends a room price. Set room count, demand and cancellation behaviour, then see occupancy over time and a transparent price recommendation.</p><h3>Method</h3><p>Stochastic Petri-net simulation with places for available, pending and confirmed rooms, repeated as a Monte Carlo experiment; price interpolates between a floor and a ceiling according to expected occupancy.</p><h3>How does the pricing simulator work?</h3><p>A Petri net models booking demand: rooms move between available, pending and confirmed places as bookings arrive and cancel. Many Monte Carlo runs give expected occupancy, and the price is interpolated within a set band from that occupancy.</p><h3>Does the AI set the price?</h3><p>No. Simulation and price interpolation are deterministic code. A language model only writes the plain-language rationale.</p><h3>Why a Petri net for hotel bookings?</h3><p>Petri nets make resource states and transitions explicit, so token conservation (no room is created or lost) and each firing rule can be checked.</p></section>
 <script>
 const API = "/petrinets";
 
