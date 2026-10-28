@@ -59,6 +59,7 @@ function showSection(id) {
     const sec = document.getElementById('section-' + id);
     if (sec) sec.classList.add('active');
     if (id === 'scenarios' && window.FcScenario) FcScenario.refresh();
+    if (id === 'advisor' && window.FcAdvisor) FcAdvisor.refresh();
 
     const nav = document.querySelector(`[data-section="${id}"]`);
     if (nav) nav.classList.add('active');
@@ -69,6 +70,7 @@ function showSection(id) {
         ratios: 'Ratio Analysis',
         charts: 'Charts',
         scenarios: 'Trends & Scenarios',
+        advisor: 'Advisor',
         report: 'Report',
         glossary: 'Glossary of Terms'
     };

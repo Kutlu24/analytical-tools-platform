@@ -11,6 +11,7 @@
     const NEUTRAL = new Set(['fd']);
 
     let periods = load();
+    let lastScenario = null; // set while the sliders are away from zero; read by the advisor
 
     function load() {
         try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return []; }
@@ -253,6 +254,7 @@
             return;
         }
         const out = applyScenario(b, L);
+        lastScenario = null;
         const r0 = ratiosOf(b), r1 = ratiosOf(out.figures, b);
         const s0 = skorHesapla(hesaplaRasyolar(b)), s1 = skorHesapla(hesaplaRasyolar(out.figures));
         const keys = Object.keys(rasyoMeta).filter(k => !SKIP.has(k));
@@ -267,6 +269,7 @@
         if (out.figures.ozkaynak <= 0) warnings.push('Equity is zero or negative: leverage ratios are not meaningful.');
         if (out.figures.netKar < 0) warnings.push('The scenario produces a net loss.');
         const st0 = saglikDurumu(s0), st1 = saglikDurumu(s1), d = s1 - s0;
+        if (Object.values(L).some(x => x)) lastScenario = { levers: L, base_score: s0, scenario_score: s1, warnings };
         host.innerHTML = `
             <div class="sc-scorebar">
                 <div><span class="sc-k">Base</span><strong>${s0}</strong><em>${st0.etiket}</em></div>
@@ -319,6 +322,11 @@
     }
 
     // Re-render when the section opens so it reflects the latest Data Entry figures.
-    window.FcScenario = { refresh() { renderTrend(); renderScenario(); }, applyScenario, currentFigures, importFiles };
+    window.FcScenario = {
+        refresh() { renderTrend(); renderScenario(); },
+        applyScenario, currentFigures, importFiles, ratiosOf,
+        getPeriods: () => periods.map(p => ({ label: p.label, data: p.data })),
+        getScenario: () => lastScenario,
+    };
     init();
 })();
