@@ -3,59 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b0d12">
     <title>Financial Compass: Financial Statement and Ratio Analysis Tool</title>
 <meta name="description" content="Free financial statement analysis: liquidity, leverage, profitability and activity ratios, DuPont decomposition and charts from a balance sheet or uploaded PDF.">
 <meta property="og:title" content="Financial Compass: Financial Statement and Ratio Analysis Tool">
 <meta property="og:description" content="Free financial statement analysis: liquidity, leverage, profitability and activity ratios, DuPont decomposition and charts from a balance sheet or uploaded PDF.">
 <meta property="og:type" content="website">
 <script type="application/ld+json">[{"@context": "https://schema.org", "@type": "WebApplication", "name": "Financial Compass", "description": "Free financial statement analysis: liquidity, leverage, profitability and activity ratios, DuPont decomposition and charts from a balance sheet or uploaded PDF.", "applicationCategory": "FinanceApplication", "operatingSystem": "Any (web browser)", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is the current ratio and what is a good value?", "acceptedAnswer": {"@type": "Answer", "text": "Current ratio = current assets / current liabilities. Values around 1.5 or higher are usually considered comfortable; below 1 signals liquidity risk."}}, {"@type": "Question", "name": "What does the DuPont analysis show?", "acceptedAnswer": {"@type": "Answer", "text": "It splits return on equity (ROE) into net profit margin x asset turnover x financial leverage, showing whether ROE comes from profitability, efficiency or debt."}}, {"@type": "Question", "name": "Is my financial data stored?", "acceptedAnswer": {"@type": "Answer", "text": "Ratios are calculated in your browser. Documents uploaded for extraction are processed by the server and a language model only to read figures; the arithmetic is plain code."}}]}]</script>
-
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='none' stroke='%234ade80' stroke-width='1.7'/%3E%3Cpath d='M15.8 8.2 10.4 10.4 8.2 15.8l5.4-2.2Z' fill='%234ade80'/%3E%3C/svg%3E">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<!-- Reusable icon sprite (zero-dependency inline SVG set) -->
+<svg class="icon-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-dashboard" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="4.8" rx="1.6"/><rect x="13.5" y="10.8" width="7.5" height="10.2" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/></symbol>
+    <symbol id="i-input" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7.5 18.5 3.5 19.5l1-4Z"/></symbol>
+    <symbol id="i-ratios" viewBox="0 0 24 24"><path d="M3 15l4-6 3.5 8L15 5l3 7h3"/></symbol>
+    <symbol id="i-charts" viewBox="0 0 24 24"><path d="M4 20V11"/><path d="M10 20V4"/><path d="M16 20v-6"/><path d="M21 20H3"/></symbol>
+    <symbol id="i-report" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/></symbol>
+    <symbol id="i-glossary" viewBox="0 0 24 24"><path d="M2.5 5H8a3 3 0 0 1 3 3v11.5A2.5 2.5 0 0 0 8.5 17H2.5Z"/><path d="M21.5 5H16a3 3 0 0 0-3 3v11.5a2.5 2.5 0 0 1 2.5-2.5h6Z"/></symbol>
+    <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.8 8.2 10.4 10.4 8.2 15.8l5.4-2.2Z"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></symbol>
+    <symbol id="i-collapse" viewBox="0 0 24 24"><path d="M14 6l-6 6 6 6"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path d="M10 6l6 6-6 6"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h13"/><path d="M12 5l7 7-7 7"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 9l5-5 5 5"/><path d="M12 4v12"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 11l5 5 5-5"/><path d="M12 16V4"/></symbol>
+    <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7" rx="1"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9 1.9 18a2 2 0 0 0 1.7 3h16.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/></symbol>
+    <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9.5h18"/><path d="M9.5 9.5V20"/></symbol>
+    <symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 4v16"/><path d="M6.5 8h11"/><path d="M4 20h16"/><path d="M6.5 8 3.5 14.5a3 3 0 0 0 6 0Z"/><path d="M17.5 8l-3 6.5a3 3 0 0 0 6 0Z"/></symbol>
+    <symbol id="i-trend" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v5h-5"/></symbol>
+    <symbol id="i-pie" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9h-9Z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15Z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></symbol>
+</svg>
+
 <!-- Sidebar -->
-<aside class="sidebar" id="sidebar">
+<aside class="sidebar" id="sidebar" aria-label="Main navigation">
     <div class="sidebar-logo">
-        <span class="logo-icon">⊕</span>
-        <span class="logo-text">Financial<br>Compass</span>
+        <span class="logo-mark"><svg class="ico" aria-hidden="true"><use href="#i-compass"/></svg></span>
+        <span class="logo-text">Financial<br><em>Compass</em></span>
+        <button class="sidebar-collapse" id="sidebarCollapse" type="button" title="Collapse sidebar" aria-label="Collapse sidebar" aria-expanded="true">
+            <svg class="ico ico-collapse" aria-hidden="true"><use href="#i-collapse"/></svg>
+            <svg class="ico ico-expand" aria-hidden="true"><use href="#i-expand"/></svg>
+        </button>
     </div>
     <nav class="sidebar-nav">
-        <a href="#" class="nav-item active" data-section="dashboard">
-            <span class="nav-icon">◈</span><span>Dashboard</span>
+        <a href="#" class="nav-item active" data-section="dashboard" title="Dashboard">
+            <svg class="ico" aria-hidden="true"><use href="#i-dashboard"/></svg><span class="nav-label">Dashboard</span>
         </a>
-        <a href="#" class="nav-item" data-section="input">
-            <span class="nav-icon">◎</span><span>Data Entry</span>
+        <a href="#" class="nav-item" data-section="input" title="Data Entry">
+            <svg class="ico" aria-hidden="true"><use href="#i-input"/></svg><span class="nav-label">Data Entry</span>
         </a>
-        <a href="#" class="nav-item" data-section="ratios">
-            <span class="nav-icon">◉</span><span>Ratio Analysis</span>
+        <a href="#" class="nav-item" data-section="ratios" title="Ratio Analysis">
+            <svg class="ico" aria-hidden="true"><use href="#i-ratios"/></svg><span class="nav-label">Ratio Analysis</span>
         </a>
-        <a href="#" class="nav-item" data-section="charts">
-            <span class="nav-icon">◐</span><span>Charts</span>
+        <a href="#" class="nav-item" data-section="charts" title="Charts">
+            <svg class="ico" aria-hidden="true"><use href="#i-charts"/></svg><span class="nav-label">Charts</span>
         </a>
-        <a href="#" class="nav-item" data-section="report">
-            <span class="nav-icon">◑</span><span>Report</span>
+        <a href="#" class="nav-item" data-section="report" title="Report">
+            <svg class="ico" aria-hidden="true"><use href="#i-report"/></svg><span class="nav-label">Report</span>
         </a>
-        <a href="#" class="nav-item" data-section="glossary">
-            <span class="nav-icon">◒</span><span>Glossary</span>
+        <a href="#" class="nav-item" data-section="glossary" title="Glossary">
+            <svg class="ico" aria-hidden="true"><use href="#i-glossary"/></svg><span class="nav-label">Glossary</span>
         </a>
     </nav>
-    <div class="sidebar-footer">v2.1 • 2026</div>
+    <div class="sidebar-footer">
+        <span class="sidebar-footer-text">v2.2 · 2026</span>
+    </div>
 </aside>
+<div class="sidebar-backdrop" id="sidebarBackdrop" hidden></div>
 
 <div class="main-wrapper">
     <!-- Top bar -->
     <header class="topbar">
-        <button class="menu-toggle" id="menuToggle">☰</button>
+        <button class="menu-toggle" id="menuToggle" type="button" aria-label="Open navigation" aria-controls="sidebar">
+            <svg class="ico" aria-hidden="true"><use href="#i-menu"/></svg>
+        </button>
         <div class="topbar-title" id="pageTitle">Dashboard</div>
         <div class="topbar-actions">
-            <span class="status-dot" id="statusDot"></span>
-            <span class="status-text" id="statusText">Awaiting Data</span>
+            <div class="status-pill" id="statusPill">
+                <span class="status-dot" id="statusDot"></span>
+                <span class="status-text" id="statusText">Awaiting Data</span>
+            </div>
+            <button class="btn-ghost btn-sm topbar-sample" type="button" onclick="ornekVeriYukle()">Load Sample</button>
         </div>
     </header>
 
@@ -64,112 +104,165 @@
 
         <!-- ===== DASHBOARD ===== -->
         <section id="section-dashboard" class="section active">
-            <div class="section-hero">
-                <div class="hero-text">
+            <div class="bento">
+
+                <article class="tile tile-hero">
+                    <div class="tile-eyebrow">Financial statement analysis</div>
                     <h1>Financial<br><em>Health Score</em></h1>
                     <p>Analyze your company's financial data, calculate key ratios, and generate visual reports.</p>
-                    <button class="btn-hero" onclick="showSection('input')">Start Analysis →</button>
-                </div>
-                <div class="hero-score">
+                    <div class="hero-actions">
+                        <button class="btn-hero" type="button" onclick="showSection('input')">Start Analysis <svg class="ico ico-inline" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+                        <button class="btn-secondary" type="button" onclick="ornekVeriYukle()">Load Sample Data</button>
+                    </div>
+                    <div class="hero-chips">
+                        <span class="chip" id="chipRatioCount">16 ratios</span>
+                        <span class="chip">PDF &amp; image extraction</span>
+                        <span class="chip">Runs in your browser</span>
+                    </div>
+                    <div class="hero-glow" aria-hidden="true"></div>
+                </article>
+
+                <article class="tile tile-score">
+                    <header class="tile-head">
+                        <h2>Health Score</h2>
+                        <span class="tile-meta">Weighted average of 6 ratios</span>
+                    </header>
                     <div class="score-gauge-wrap">
-                        <canvas id="chartHealthScore"></canvas>
+                        <canvas id="chartHealthScore" aria-label="Financial health score gauge" role="img"></canvas>
                         <div class="score-center">
                             <div class="score-number" id="scoreNumber">—</div>
                             <div class="score-label" id="scoreLabel">Awaiting data</div>
                         </div>
                     </div>
-                    <div class="score-caption">Weighted average of 6 ratios</div>
-                </div>
-            </div>
-            <div class="kpi-grid" id="kpiGrid">
-                <div class="kpi-card kpi-empty">
-                    <div class="kpi-icon">💧</div>
-                    <div class="kpi-label">Current Ratio</div>
-                    <div class="kpi-value">—</div>
-                </div>
-                <div class="kpi-card kpi-empty">
-                    <div class="kpi-icon">⚗️</div>
-                    <div class="kpi-label">Acid-Test Ratio</div>
-                    <div class="kpi-value">—</div>
-                </div>
-                <div class="kpi-card kpi-empty">
-                    <div class="kpi-icon">⚖️</div>
-                    <div class="kpi-label">Debt / Equity</div>
-                    <div class="kpi-value">—</div>
-                </div>
-                <div class="kpi-card kpi-empty">
-                    <div class="kpi-icon">📈</div>
-                    <div class="kpi-label">Net Profit Margin</div>
-                    <div class="kpi-value">—</div>
-                </div>
-                <div class="kpi-card kpi-empty">
-                    <div class="kpi-icon">🔄</div>
-                    <div class="kpi-label">Asset Turnover</div>
-                    <div class="kpi-value">—</div>
-                </div>
-                <div class="kpi-card kpi-empty">
-                    <div class="kpi-icon">💰</div>
-                    <div class="kpi-label">ROE</div>
-                    <div class="kpi-value">—</div>
-                </div>
-            </div>
-            <div id="alertsBox" class="alerts-box hidden">
-                <h3>⚠ Critical Alerts</h3>
-                <div id="alertsList"></div>
+                    <div class="score-scale" aria-hidden="true">
+                        <span>0</span><span>50</span><span>100</span>
+                    </div>
+                </article>
+
+                <article class="tile tile-breakdown">
+                    <header class="tile-head">
+                        <h2>Score Breakdown</h2>
+                        <span class="tile-meta">6 components</span>
+                    </header>
+                    <div class="breakdown-list" id="breakdownList"></div>
+                </article>
+
+                <article class="tile tile-structure">
+                    <header class="tile-head">
+                        <h2>Balance Sheet Structure</h2>
+                        <span class="tile-meta" id="structureMeta">Awaiting data</span>
+                    </header>
+                    <div class="structure-box" id="structureBox"></div>
+                </article>
+
+                <article class="tile tile-alerts" id="alertsBox">
+                    <header class="tile-head">
+                        <h2><svg class="ico ico-inline" aria-hidden="true"><use href="#i-alert"/></svg> Critical Alerts</h2>
+                        <span class="tile-meta" id="alertsCount"></span>
+                    </header>
+                    <div id="alertsList"></div>
+                </article>
+
+                <article class="tile tile-kpis">
+                    <header class="tile-head">
+                        <h2>Key Ratios</h2>
+                        <span class="tile-meta">Bar shows value against its healthy range</span>
+                    </header>
+                    <div class="kpi-grid" id="kpiGrid">
+                        <div class="kpi-card kpi-empty">
+                            <div class="kpi-label">Current Ratio<span class="kpi-status" aria-hidden="true"></span></div>
+                            <div class="kpi-value">—</div>
+                            <div class="bench"><span class="bench-fill" style="width:0%"></span></div>
+                        </div>
+                        <div class="kpi-card kpi-empty">
+                            <div class="kpi-label">Acid-Test Ratio<span class="kpi-status" aria-hidden="true"></span></div>
+                            <div class="kpi-value">—</div>
+                            <div class="bench"><span class="bench-fill" style="width:0%"></span></div>
+                        </div>
+                        <div class="kpi-card kpi-empty">
+                            <div class="kpi-label">Debt / Equity<span class="kpi-status" aria-hidden="true"></span></div>
+                            <div class="kpi-value">—</div>
+                            <div class="bench"><span class="bench-fill" style="width:0%"></span></div>
+                        </div>
+                        <div class="kpi-card kpi-empty">
+                            <div class="kpi-label">Net Profit Margin<span class="kpi-status" aria-hidden="true"></span></div>
+                            <div class="kpi-value">—</div>
+                            <div class="bench"><span class="bench-fill" style="width:0%"></span></div>
+                        </div>
+                        <div class="kpi-card kpi-empty">
+                            <div class="kpi-label">Asset Turnover<span class="kpi-status" aria-hidden="true"></span></div>
+                            <div class="kpi-value">—</div>
+                            <div class="bench"><span class="bench-fill" style="width:0%"></span></div>
+                        </div>
+                        <div class="kpi-card kpi-empty">
+                            <div class="kpi-label">ROE<span class="kpi-status" aria-hidden="true"></span></div>
+                            <div class="kpi-value">—</div>
+                            <div class="bench"><span class="bench-fill" style="width:0%"></span></div>
+                        </div>
+                    </div>
+                </article>
+
             </div>
         </section>
 
         <!-- ===== INPUT ===== -->
         <section id="section-input" class="section">
-            <h2 class="section-title">Data Entry</h2>
+            <div class="section-head">
+                <h2 class="section-title">Data Entry</h2>
+                <p class="section-sub">Enter figures manually, upload a CSV/JSON file, or let AI read a balance sheet document.</p>
+            </div>
 
-            <div class="tabs">
-                <button class="tab active" data-tab="manuel">Manual Entry</button>
-                <button class="tab" data-tab="csv">Upload CSV / JSON</button>
-                <button class="tab" data-tab="document">Upload Document</button>
+            <div class="tabs" role="tablist">
+                <button class="tab active" role="tab" aria-selected="true" data-tab="manuel">Manual Entry</button>
+                <button class="tab" role="tab" aria-selected="false" data-tab="csv">Upload CSV / JSON</button>
+                <button class="tab" role="tab" aria-selected="false" data-tab="document">Upload Document</button>
             </div>
 
             <div id="tab-manuel" class="tab-content active">
+                <div class="balance-check" id="balanceCheck" hidden>
+                    <svg class="ico ico-inline" aria-hidden="true"><use href="#i-scale"/></svg>
+                    <span id="balanceCheckText"></span>
+                </div>
                 <div class="input-grid">
                     <div class="input-group">
-                        <h3 class="group-title">🏦 Balance Sheet — Assets</h3>
-                        <div class="field"><label>Current Assets</label><input type="number" id="donenVarliklar" placeholder="0"></div>
-                        <div class="field"><label>Inventory</label><input type="number" id="stoklar" placeholder="0"></div>
-                        <div class="field"><label>Cash & Equivalents</label><input type="number" id="nakit" placeholder="0"></div>
-                        <div class="field"><label>Total Assets</label><input type="number" id="toplamAktif" placeholder="0"></div>
+                        <h3 class="group-title"><svg class="ico ico-inline" aria-hidden="true"><use href="#i-pie"/></svg> Balance Sheet — Assets</h3>
+                        <div class="field"><label for="donenVarliklar">Current Assets</label><div class="input-affix"><input type="number" id="donenVarliklar" placeholder="0" inputmode="decimal"><span class="affix">USD</span></div></div>
+                        <div class="field"><label for="stoklar">Inventory</label><div class="input-affix"><input type="number" id="stoklar" placeholder="0" inputmode="decimal"><span class="affix">USD</span></div></div>
+                        <div class="field"><label for="nakit">Cash &amp; Equivalents</label><div class="input-affix"><input type="number" id="nakit" placeholder="0" inputmode="decimal"><span class="affix">USD</span></div></div>
+                        <div class="field"><label for="toplamAktif">Total Assets</label><div class="input-affix"><input type="number" id="toplamAktif" placeholder="0" inputmode="decimal"><span class="affix">USD</span></div></div>
                     </div>
                     <div class="input-group">
-                        <h3 class="group-title">📋 Balance Sheet — Liabilities</h3>
-                        <div class="field"><label>Current Liabilities</label><input type="number" id="kisaVadeliBorclar" placeholder="0"></div>
-                        <div class="field"><label>Long-Term Liabilities</label><input type="number" id="uzunVadeliBorclar" placeholder="0"></div>
-                        <div class="field"><label>Total Liabilities</label><input type="number" id="toplamBorclar" placeholder="0"></div>
-                        <div class="field"><label>Equity</label><input type="number" id="ozkaynak" placeholder="0"></div>
+                        <h3 class="group-title"><svg class="ico ico-inline" aria-hidden="true"><use href="#i-table"/></svg> Balance Sheet — Liabilities</h3>
+                        <div class="field"><label for="kisaVadeliBorclar">Current Liabilities</label><div class="input-affix"><input type="number" id="kisaVadeliBorclar" placeholder="0" inputmode="decimal"><span class="affix">USD</span></div></div>
+                        <div class="field"><label for="uzunVadeliBorclar">Long-Term Liabilities</label><div class="input-affix"><input type="number" id="uzunVadeliBorclar" placeholder="0" inputmode="decimal"><span class="affix">USD</span></div></div>
+                        <div class="field"><label for="toplamBorclar">Total Liabilities</label><div class="input-affix"><input type="number" id="toplamBorclar" placeholder="0" inputmode="decimal"><span class="affix">USD</span></div></div>
+                        <div class="field"><label for="ozkaynak">Equity</label><div class="input-affix"><input type="number" id="ozkaynak" placeholder="0" inputmode="decimal"><span class="affix">USD</span></div></div>
                     </div>
                     <div class="input-group">
-                        <h3 class="group-title">📊 Income Statement</h3>
-                        <div class="field"><label>Net Sales</label><input type="number" id="netSatislar" placeholder="0"></div>
-                        <div class="field"><label>Gross Profit</label><input type="number" id="brutKar" placeholder="0"></div>
-                        <div class="field"><label>Operating Profit (EBIT)</label><input type="number" id="faaliyetKari" placeholder="0"></div>
-                        <div class="field"><label>Net Profit</label><input type="number" id="netKar" placeholder="0"></div>
+                        <h3 class="group-title"><svg class="ico ico-inline" aria-hidden="true"><use href="#i-trend"/></svg> Income Statement</h3>
+                        <div class="field"><label for="netSatislar">Net Sales</label><div class="input-affix"><input type="number" id="netSatislar" placeholder="0" inputmode="decimal"><span class="affix">USD</span></div></div>
+                        <div class="field"><label for="brutKar">Gross Profit</label><div class="input-affix"><input type="number" id="brutKar" placeholder="0" inputmode="decimal"><span class="affix">USD</span></div></div>
+                        <div class="field"><label for="faaliyetKari">Operating Profit (EBIT)</label><div class="input-affix"><input type="number" id="faaliyetKari" placeholder="0" inputmode="decimal"><span class="affix">USD</span></div></div>
+                        <div class="field"><label for="netKar">Net Profit</label><div class="input-affix"><input type="number" id="netKar" placeholder="0" inputmode="decimal"><span class="affix">USD</span></div></div>
                     </div>
                     <div class="input-group">
-                        <h3 class="group-title">🏢 Additional Data</h3>
-                        <div class="field"><label>Accounts Receivable</label><input type="number" id="alacaklar" placeholder="0"></div>
-                        <div class="field"><label>Interest Expense</label><input type="number" id="faizGiderleri" placeholder="0"></div>
-                        <div class="field"><label>Earnings Per Share (EPS)</label><input type="number" id="eps" placeholder="0"></div>
-                        <div class="field"><label>Share Price</label><input type="number" id="hisseFiyati" placeholder="0"></div>
+                        <h3 class="group-title"><svg class="ico ico-inline" aria-hidden="true"><use href="#i-report"/></svg> Additional Data</h3>
+                        <div class="field"><label for="alacaklar">Accounts Receivable</label><div class="input-affix"><input type="number" id="alacaklar" placeholder="0" inputmode="decimal"><span class="affix">USD</span></div></div>
+                        <div class="field"><label for="faizGiderleri">Interest Expense</label><div class="input-affix"><input type="number" id="faizGiderleri" placeholder="0" inputmode="decimal"><span class="affix">USD</span></div></div>
+                        <div class="field"><label for="eps">Earnings Per Share (EPS)</label><div class="input-affix"><input type="number" id="eps" placeholder="0" step="0.01" inputmode="decimal"><span class="affix">USD</span></div></div>
+                        <div class="field"><label for="hisseFiyati">Share Price</label><div class="input-affix"><input type="number" id="hisseFiyati" placeholder="0" step="0.01" inputmode="decimal"><span class="affix">USD</span></div></div>
                     </div>
                 </div>
                 <div class="btn-row">
-                    <button class="btn-primary" onclick="hesapla()">Analyze →</button>
-                    <button class="btn-secondary" onclick="ornekVeriYukle()">Load Sample Data</button>
-                    <button class="btn-ghost" onclick="formuSifirla()">Clear</button>
+                    <button class="btn-primary" type="button" onclick="hesapla()">Analyze <svg class="ico ico-inline" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+                    <button class="btn-secondary" type="button" onclick="ornekVeriYukle()">Load Sample Data</button>
+                    <button class="btn-ghost" type="button" onclick="formuSifirla()">Clear</button>
                 </div>
             </div>
 
             <div id="tab-csv" class="tab-content">
                 <div class="upload-area" id="uploadArea">
-                    <div class="upload-icon">📁</div>
+                    <div class="upload-icon"><svg class="ico" aria-hidden="true"><use href="#i-upload"/></svg></div>
                     <p>Drag your CSV or JSON file here</p>
                     <span>or</span>
                     <label class="btn-upload">
@@ -180,7 +273,7 @@
                 </div>
                 <div id="csvPreview" class="csv-preview hidden"></div>
                 <div class="csv-format">
-                    <h4>Expected Format (CSV):</h4>
+                    <h4>Expected Format (CSV)</h4>
                     <pre>field,value
 donenVarliklar,500000
 stoklar,120000
@@ -188,15 +281,15 @@ nakit,80000
 toplamAktif,900000
 kisaVadeliBorclar,300000
 ...</pre>
-                    <h4>Expected Format (JSON):</h4>
+                    <h4>Expected Format (JSON)</h4>
                     <pre>{"donenVarliklar":500000,"stoklar":120000,"nakit":80000,...}</pre>
-                    <button class="btn-secondary" onclick="sablonIndir()">📥 Download Sample CSV</button>
+                    <button class="btn-secondary" type="button" onclick="sablonIndir()"><svg class="ico ico-inline" aria-hidden="true"><use href="#i-download"/></svg> Download Sample CSV</button>
                 </div>
             </div>
 
             <div id="tab-document" class="tab-content">
                 <div class="upload-area" id="docUploadArea">
-                    <div class="upload-icon">🧾</div>
+                    <div class="upload-icon"><svg class="ico" aria-hidden="true"><use href="#i-file"/></svg></div>
                     <p>Drag a balance sheet document here (PDF or image)</p>
                     <span>or</span>
                     <label class="btn-upload">
@@ -211,30 +304,34 @@ kisaVadeliBorclar,300000
 
         <!-- ===== RATIOS ===== -->
         <section id="section-ratios" class="section">
-            <h2 class="section-title">Ratio Analysis</h2>
+            <div class="section-head">
+                <h2 class="section-title">Ratio Analysis</h2>
+                <div class="ratio-summary" id="ratioSummary" hidden></div>
+            </div>
             <div id="noDataMsg" class="no-data-msg">
+                <div class="no-data-icon"><svg class="ico" aria-hidden="true"><use href="#i-ratios"/></svg></div>
                 <span>Enter data first</span>
-                <button class="btn-secondary" onclick="showSection('input')">Enter Data →</button>
+                <button class="btn-secondary" type="button" onclick="showSection('input')">Enter Data <svg class="ico ico-inline" aria-hidden="true"><use href="#i-arrow"/></svg></button>
             </div>
             <div id="ratioResults" class="hidden">
                 <div class="ratio-category" id="catLikidite">
-                    <h3>💧 Liquidity Ratios</h3>
+                    <div class="ratio-cat-head"><h3><span class="cat-dot dot-ok"></span> Liquidity Ratios</h3><span class="cat-count" id="cntLikidite"></span></div>
                     <div class="ratio-cards" id="rLikidite"></div>
                 </div>
                 <div class="ratio-category" id="catKaldirac">
-                    <h3>⚖️ Leverage Ratios</h3>
+                    <div class="ratio-cat-head"><h3><span class="cat-dot dot-warn"></span> Leverage Ratios</h3><span class="cat-count" id="cntKaldirac"></span></div>
                     <div class="ratio-cards" id="rKaldirac"></div>
                 </div>
                 <div class="ratio-category" id="catKarlilik">
-                    <h3>📈 Profitability Ratios</h3>
+                    <div class="ratio-cat-head"><h3><span class="cat-dot dot-ok"></span> Profitability Ratios</h3><span class="cat-count" id="cntKarlilik"></span></div>
                     <div class="ratio-cards" id="rKarlilik"></div>
                 </div>
                 <div class="ratio-category" id="catFaaliyet">
-                    <h3>🔄 Activity Ratios</h3>
+                    <div class="ratio-cat-head"><h3><span class="cat-dot dot-neutral"></span> Activity Ratios</h3><span class="cat-count" id="cntFaaliyet"></span></div>
                     <div class="ratio-cards" id="rFaaliyet"></div>
                 </div>
                 <div class="ratio-category" id="catPiyasa">
-                    <h3>📊 Market Ratios</h3>
+                    <div class="ratio-cat-head"><h3><span class="cat-dot dot-neutral"></span> Market Ratios</h3><span class="cat-count" id="cntPiyasa"></span></div>
                     <div class="ratio-cards" id="rPiyasa"></div>
                 </div>
             </div>
@@ -242,58 +339,96 @@ kisaVadeliBorclar,300000
 
         <!-- ===== CHARTS ===== -->
         <section id="section-charts" class="section">
-            <h2 class="section-title">Charts</h2>
+            <div class="section-head">
+                <h2 class="section-title">Charts</h2>
+                <p class="section-sub">Liquidity, profitability, balance sheet structure and a combined ratio profile.</p>
+            </div>
             <div id="noDataMsgChart" class="no-data-msg">
+                <div class="no-data-icon"><svg class="ico" aria-hidden="true"><use href="#i-charts"/></svg></div>
                 <span>Enter data first</span>
-                <button class="btn-secondary" onclick="showSection('input')">Enter Data →</button>
+                <button class="btn-secondary" type="button" onclick="showSection('input')">Enter Data <svg class="ico ico-inline" aria-hidden="true"><use href="#i-arrow"/></svg></button>
             </div>
             <div id="chartResults" class="hidden">
                 <div class="charts-grid">
                     <div class="chart-card">
-                        <h4>Liquidity Ratios</h4>
-                        <canvas id="chartLikidite"></canvas>
+                        <header class="chart-head">
+                            <div><h4>Liquidity Ratios</h4><p>Value against the minimum healthy threshold</p></div>
+                            <span class="chart-tag">ratio</span>
+                        </header>
+                        <div class="chart-body"><canvas id="chartLikidite"></canvas></div>
                     </div>
                     <div class="chart-card">
-                        <h4>Profitability Ratios (%)</h4>
-                        <canvas id="chartKarlilik"></canvas>
+                        <header class="chart-head">
+                            <div><h4>Profitability Ratios</h4><p>Green bars clear the 5% benchmark</p></div>
+                            <span class="chart-tag">%</span>
+                        </header>
+                        <div class="chart-body"><canvas id="chartKarlilik"></canvas></div>
                     </div>
                     <div class="chart-card">
-                        <h4>Asset Composition</h4>
-                        <canvas id="chartVarlik"></canvas>
+                        <header class="chart-head">
+                            <div><h4>Asset Composition</h4><p>Current vs non-current assets</p></div>
+                            <span class="chart-tag"><svg class="ico ico-inline" aria-hidden="true"><use href="#i-pie"/></svg></span>
+                        </header>
+                        <div class="chart-body chart-body-doughnut"><canvas id="chartVarlik"></canvas></div>
                     </div>
                     <div class="chart-card">
-                        <h4>Liability Structure</h4>
-                        <canvas id="chartBorc"></canvas>
+                        <header class="chart-head">
+                            <div><h4>Liability Structure</h4><p>How the balance sheet is financed</p></div>
+                            <span class="chart-tag"><svg class="ico ico-inline" aria-hidden="true"><use href="#i-scale"/></svg></span>
+                        </header>
+                        <div class="chart-body chart-body-doughnut"><canvas id="chartBorc"></canvas></div>
                     </div>
                 </div>
-                <div class="charts-grid">
+                <div class="chart-row">
                     <div class="chart-card">
-                        <h4>DuPont: where does ROE come from?</h4>
+                        <header class="chart-head">
+                            <div><h4>Ratio Radar</h4><p>Six score components normalised to 0–100</p></div>
+                            <span class="chart-tag">0–100</span>
+                        </header>
+                        <div class="radar-wrap"><canvas id="chartRadar"></canvas></div>
+                    </div>
+                    <div class="chart-card" id="verdictCard">
+                        <header class="chart-head">
+                            <div><h4>Category Verdicts</h4><p>How each ratio family scores</p></div>
+                            <span class="chart-tag">17 ratios</span>
+                        </header>
+                        <div class="verdict-list" id="verdictList"></div>
+                    </div>
+                </div>
+                <div class="chart-row">
+                    <div class="chart-card">
+                        <header class="chart-head">
+                            <div><h4>DuPont: where does ROE come from?</h4><p>Margin x turnover x leverage</p></div>
+                            <span class="chart-tag">ROE</span>
+                        </header>
                         <div id="vizDupont"></div>
                     </div>
                     <div class="chart-card">
-                        <h4>Ratios on the risk scale</h4>
+                        <header class="chart-head">
+                            <div><h4>Ratios on the risk scale</h4><p>Where each ratio sits against its bands</p></div>
+                            <span class="chart-tag">Bands</span>
+                        </header>
                         <div id="vizBands"></div>
                     </div>
-                </div>
-                <div class="chart-card chart-full">
-                    <h4>Ratio Radar Analysis</h4>
-                    <div class="radar-wrap"><canvas id="chartRadar"></canvas></div>
                 </div>
             </div>
         </section>
 
         <!-- ===== REPORT ===== -->
         <section id="section-report" class="section">
-            <h2 class="section-title">Report</h2>
+            <div class="section-head">
+                <h2 class="section-title">Report</h2>
+                <p class="section-sub">Print-ready summary of every ratio, its formula and the verdict.</p>
+            </div>
             <div id="noDataMsgReport" class="no-data-msg">
+                <div class="no-data-icon"><svg class="ico" aria-hidden="true"><use href="#i-report"/></svg></div>
                 <span>Run an analysis first</span>
-                <button class="btn-secondary" onclick="showSection('input')">Enter Data →</button>
+                <button class="btn-secondary" type="button" onclick="showSection('input')">Enter Data <svg class="ico ico-inline" aria-hidden="true"><use href="#i-arrow"/></svg></button>
             </div>
             <div id="reportContent" class="hidden">
                 <div class="report-actions">
-                    <button class="btn-primary" onclick="raporuYazdir()">🖨 Print / PDF</button>
-                    <button class="btn-secondary" onclick="raporuCSVIndir()">📥 Download CSV</button>
+                    <button class="btn-primary" type="button" onclick="raporuYazdir()"><svg class="ico ico-inline" aria-hidden="true"><use href="#i-print"/></svg> Print / PDF</button>
+                    <button class="btn-secondary" type="button" onclick="raporuCSVIndir()"><svg class="ico ico-inline" aria-hidden="true"><use href="#i-download"/></svg> Download CSV</button>
                 </div>
                 <div id="reportBody" class="report-body"></div>
             </div>
@@ -301,19 +436,26 @@ kisaVadeliBorclar,300000
 
         <!-- ===== GLOSSARY ===== -->
         <section id="section-glossary" class="section">
-            <h2 class="section-title">Glossary of Terms</h2>
-            <div class="search-row">
-                <input type="text" id="glossarySearch" placeholder="Search terms..." oninput="filterGlossary()">
+            <div class="section-head">
+                <h2 class="section-title">Glossary of Terms</h2>
+                <p class="section-sub">Every ratio and accounting term used in this tool, explained in plain language.</p>
             </div>
+            <div class="search-row">
+                <svg class="ico search-ico" aria-hidden="true"><use href="#i-search"/></svg>
+                <input type="text" id="glossarySearch" placeholder="Search terms..." aria-label="Search glossary terms" oninput="filterGlossary()">
+                <span class="search-count" id="glossaryCount"></span>
+            </div>
+            <div class="glossary-chips" id="glossaryChips"></div>
             <div id="glossaryList" class="glossary-list"></div>
         </section>
 
-<style>.seo-about{max-width:860px;margin:2.5rem auto;padding:1.25rem 1.5rem;border-top:1px solid rgba(128,128,128,.35);font:15px/1.6 system-ui,sans-serif;opacity:.9}.seo-about h2{font-size:1.15rem;margin:0 0 .5rem}.seo-about h3{font-size:1rem;margin:1rem 0 .25rem}.seo-about p,.seo-about li{margin:.25rem 0}</style><section class="seo-about" id="about"><h2>About Financial Compass</h2><p>Financial Compass is a free web tool for financial statement analysis. Enter balance sheet and income statement figures, or upload a PDF or image, and it computes liquidity, leverage, profitability, activity and market ratios, a health score, a DuPont decomposition and charts.</p><h3>Ratios covered</h3><p>Current ratio, acid-test ratio, cash ratio, debt-to-equity, debt ratio, interest coverage, gross/operating/net margin, ROE, ROA, asset, receivables and inventory turnover, and price-to-earnings. Each ratio has a formula and a plain-language reading.</p><h3>What is the current ratio and what is a good value?</h3><p>Current ratio = current assets / current liabilities. Values around 1.5 or higher are usually considered comfortable; below 1 signals liquidity risk.</p><h3>What does the DuPont analysis show?</h3><p>It splits return on equity (ROE) into net profit margin x asset turnover x financial leverage, showing whether ROE comes from profitability, efficiency or debt.</p><h3>Is my financial data stored?</h3><p>Ratios are calculated in your browser. Documents uploaded for extraction are processed by the server and a language model only to read figures; the arithmetic is plain code.</p></section>
     </main>
+<style>.seo-about{max-width:860px;margin:2.5rem auto;padding:1.25rem 1.5rem;border-top:1px solid rgba(128,128,128,.35);font:15px/1.6 system-ui,sans-serif;opacity:.9}.seo-about h2{font-size:1.15rem;margin:0 0 .5rem}.seo-about h3{font-size:1rem;margin:1rem 0 .25rem}.seo-about p,.seo-about li{margin:.25rem 0}</style><section class="seo-about" id="about"><h2>About Financial Compass</h2><p>Financial Compass is a free web tool for financial statement analysis. Enter balance sheet and income statement figures, or upload a PDF or image, and it computes liquidity, leverage, profitability, activity and market ratios, a health score, a DuPont decomposition and charts.</p><h3>Ratios covered</h3><p>Current ratio, acid-test ratio, cash ratio, debt-to-equity, debt ratio, interest coverage, gross/operating/net margin, ROE, ROA, asset, receivables and inventory turnover, and price-to-earnings. Each ratio has a formula and a plain-language reading.</p><h3>What is the current ratio and what is a good value?</h3><p>Current ratio = current assets / current liabilities. Values around 1.5 or higher are usually considered comfortable; below 1 signals liquidity risk.</p><h3>What does the DuPont analysis show?</h3><p>It splits return on equity (ROE) into net profit margin x asset turnover x financial leverage, showing whether ROE comes from profitability, efficiency or debt.</p><h3>Is my financial data stored?</h3><p>Ratios are calculated in your browser. Documents uploaded for extraction are processed by the server and a language model only to read figures; the arithmetic is plain code.</p></section>
 </div>
 
 <!-- Toast -->
-<div id="toast" class="toast"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
 
 <script src="viz.js"></script>
 <script src="script.js"></script>

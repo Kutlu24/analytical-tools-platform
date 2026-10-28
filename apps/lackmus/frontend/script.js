@@ -7,6 +7,35 @@
    Only the DISPLAYED strings are translated to English.
    ============================================= */
 
+// ─── DESIGN TOKENS ────────────────────────────────
+// Read from style.css once, so every chart uses the same palette as the UI.
+function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+const TOKENS = {
+    accent: cssVar('--accent') || '#4ade80',
+    accent2: cssVar('--accent2') || '#22c55e',
+    warn: cssVar('--warn') || '#f59e0b',
+    danger: cssVar('--danger') || '#ef4444',
+    info: cssVar('--info') || '#60a5fa',
+    text: cssVar('--text') || '#e9ecf4',
+    text2: cssVar('--text2') || '#98a1b8',
+    text3: cssVar('--text3') || '#5d667e',
+    grid: cssVar('--border') || '#262c3d',
+    track: cssVar('--bg3') || '#151a26',
+    surface: cssVar('--surface') || '#141824',
+};
+
+function withAlpha(hex, a) {
+    const h = hex.replace('#', '');
+    const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+    const n = parseInt(full, 16);
+    return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+}
+
+const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 // ─── STATE ────────────────────────────────────────
 let veri = {};
 let rasyolar = {};
@@ -15,6 +44,14 @@ let analizYapildi = false;
 let saglikSkoru = null;
 
 // ─── NAV ──────────────────────────────────────────
+const sidebarEl = document.getElementById('sidebar');
+const backdropEl = document.getElementById('sidebarBackdrop');
+
+function closeMobileNav() {
+    sidebarEl.classList.remove('open');
+    backdropEl.hidden = true;
+}
+
 function showSection(id) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -35,10 +72,8 @@ function showSection(id) {
     };
     document.getElementById('pageTitle').textContent = titles[id] || id;
 
-    // Close sidebar on mobile
-    if (window.innerWidth <= 768) {
-        document.getElementById('sidebar').classList.remove('open');
-    }
+    if (window.innerWidth <= 900) closeMobileNav();
+    window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
 }
 
 document.querySelectorAll('.nav-item').forEach(item => {
@@ -49,15 +84,36 @@ document.querySelectorAll('.nav-item').forEach(item => {
 });
 
 document.getElementById('menuToggle').addEventListener('click', () => {
-    document.getElementById('sidebar').classList.toggle('open');
+    sidebarEl.classList.add('open');
+    backdropEl.hidden = false;
 });
+backdropEl.addEventListener('click', closeMobileNav);
+
+// Collapsible sidebar (desktop), persisted across sessions
+const collapseBtn = document.getElementById('sidebarCollapse');
+function applyNavState() {
+    const collapsed = localStorage.getItem('fc-nav') === '1';
+    document.body.classList.toggle('nav-collapsed', collapsed);
+    collapseBtn.setAttribute('aria-expanded', String(!collapsed));
+}
+collapseBtn.addEventListener('click', () => {
+    const collapsed = document.body.classList.toggle('nav-collapsed');
+    localStorage.setItem('fc-nav', collapsed ? '1' : '0');
+    collapseBtn.setAttribute('aria-expanded', String(!collapsed));
+    Object.values(chartInstances).forEach(c => c.resize());
+});
+applyNavState();
 
 // ─── TABS ──────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
         const parent = tab.closest('.tabs');
-        parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        parent.querySelectorAll('.tab').forEach(t => {
+            t.classList.remove('active');
+            t.setAttribute('aria-selected', 'false');
+        });
         tab.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
         const tabId = tab.dataset.tab;
         document.querySelectorAll('.tab-content').forEach(tc => {
             tc.classList.toggle('active', tc.id === 'tab-' + tabId);
@@ -217,10 +273,14 @@ function formuSifirla() {
     document.getElementById('chartResults').classList.add('hidden');
     document.getElementById('noDataMsgReport').classList.remove('hidden');
     document.getElementById('reportContent').classList.add('hidden');
-    document.getElementById('alertsBox').classList.add('hidden');
+    document.getElementById('ratioSummary').hidden = true;
+    document.getElementById('balanceCheck').hidden = true;
     updateKPIs(null);
     updateStatus(null);
     renderHealthScore();
+    renderScoreBreakdown();
+    renderStructure();
+    renderVerdicts();
     showToast('Data cleared', 'success');
 }
 
@@ -303,10 +363,14 @@ function hesapla() {
 
     renderRatios();
     renderKPIs();
+    renderScoreBreakdown();
+    renderStructure();
     renderCharts();
+    renderVerdicts();
     renderHealthScore();
     renderReport();
-    updateStatus();
+    renderBalanceCheck();
+    updateStatus(true);
     showToast('Analysis complete ✓', 'success');
 }
 
@@ -322,6 +386,24 @@ function saglikDurumu(skor) {
     if (skor >= 40) return { durum: 'warn', etiket: 'Fair' };
     if (skor >= 20) return { durum: 'warn', etiket: 'Weak' };
     return { durum: 'danger', etiket: 'Critical' };
+}
+
+// Animated counter (skipped when the user prefers reduced motion)
+function countUp(el, target, format) {
+    if (!el) return;
+    const fmt = format || (v => v.toFixed(2));
+    if (target === null || target === undefined || isNaN(target)) { el.textContent = '—'; return; }
+    if (prefersReducedMotion()) { el.textContent = fmt(target); return; }
+    const start = performance.now();
+    const dur = 700;
+    function step(now) {
+        const t = Math.min(1, (now - start) / dur);
+        const eased = 1 - Math.pow(1 - t, 3);
+        el.textContent = fmt(target * eased);
+        if (t < 1) requestAnimationFrame(step);
+        else el.textContent = fmt(target);
+    }
+    requestAnimationFrame(step);
 }
 
 function renderHealthScore() {
@@ -349,8 +431,8 @@ function renderHealthScore() {
     const { durum, etiket } = saglikDurumu(saglikSkoru);
     const colorMap = { ok: CHART_COLORS.ok, warn: CHART_COLORS.warn, danger: CHART_COLORS.danger };
 
-    numberEl.textContent = saglikSkoru;
     numberEl.style.color = colorMap[durum];
+    countUp(numberEl, saglikSkoru, v => String(Math.round(v)));
     labelEl.textContent = etiket;
 
     chartInstances.chartHealthScore = new Chart(ctx, {
@@ -568,11 +650,65 @@ const rasyoMeta = {
     },
 };
 
+// Thresholds behind each verdict, used to draw the benchmark bars.
+// Marks mirror the yorum() cut-offs above — nothing is invented here.
+const benchMap = {
+    cariOran:         { max: 3,   marks: [1, 1.5] },
+    asitTest:         { max: 2,   marks: [0.8, 1] },
+    nakitOrani:       { max: 1,   marks: [0.2, 0.5] },
+    borcOzkaynak:     { max: 3,   marks: [1, 2], inverse: true },
+    finansalKaldirac: { max: 5,   marks: [2.5, 4], inverse: true },
+    borcAktif:        { max: 1,   marks: [0.4, 0.6], inverse: true },
+    faizKarsilama:    { max: 10,  marks: [1.5, 3] },
+    brutKarMarji:     { max: 0.6, marks: [0.15, 0.3], format: 'percent' },
+    faaliyetKarMarji: { max: 0.3, marks: [0.05, 0.1], format: 'percent' },
+    netKarMarji:      { max: 0.3, marks: [0.03, 0.08], format: 'percent' },
+    roe:              { max: 0.3, marks: [0.05, 0.1], format: 'percent' },
+    roa:              { max: 0.15, marks: [0.02, 0.05], format: 'percent' },
+    aktifDevir:       { max: 3,   marks: [0.5, 1] },
+    alacakDevir:      { max: 12,  marks: [4, 6] },
+    stokDevir:        { max: 10,  marks: [2, 4] },
+    fd:               { max: 45,  marks: [20, 30], inverse: true },
+};
+
+// Dashboard KPI tiles: the six ratios the score is built from
+const KPI_DEFS = [
+    { key: 'cariOran', label: 'Current Ratio', format: null, bench: benchMap.cariOran },
+    { key: 'asitTest', label: 'Acid-Test Ratio', format: null, bench: benchMap.asitTest },
+    { key: 'borcOzkaynak', label: 'Debt / Equity', format: null, bench: benchMap.borcOzkaynak },
+    { key: 'netKarMarji', label: 'Net Profit Margin', format: 'percent', bench: benchMap.netKarMarji },
+    { key: 'aktifDevir', label: 'Asset Turnover', format: null, bench: benchMap.aktifDevir },
+    { key: 'roe', label: 'ROE', format: 'percent', bench: benchMap.roe },
+];
+
 // ─── FORMAT ────────────────────────────────────────
 function formatVal(v, meta) {
     if (v === null || isNaN(v)) return 'N/A';
     if (meta.format === 'percent') return (v * 100).toFixed(1) + '%';
     return v.toFixed(2);
+}
+
+// ─── BENCHMARK BARS ────────────────────────────────
+// bench = { max, marks:[warn, ok], inverse?, format? }
+// The bar shows where a value sits inside its healthy range — no invented
+// history, only thresholds the commentary below already uses.
+function benchHTML(bench, v) {
+    if (!bench) return '';
+    const pct = (v === null || v === undefined || isNaN(v))
+        ? 0
+        : Math.min(100, Math.max(0, (v / bench.max) * 100));
+    const zones = (bench.marks || [])
+        .map(m => Math.min(100, Math.max(0, (m / bench.max) * 100)))
+        .map(p => `<i class="bench-zone" style="left:${p.toFixed(1)}%"></i>`)
+        .join('');
+    return `<div class="bench"><span class="bench-fill" style="width:${pct.toFixed(1)}%"></span>${zones}</div>`;
+}
+
+function benchLegend(bench) {
+    if (!bench || !bench.marks || bench.marks.length < 2) return '';
+    const fmt = x => (bench.format === 'percent' ? Math.round(x * 100) + '%' : String(x));
+    return `<div class="bench-legend"><span>healthy ${bench.inverse ? '≤' : '≥'} ${fmt(bench.marks[1])}</span>` +
+           `<span>scale ${bench.inverse ? '↑ worse' : '↑ better'} · max ${fmt(bench.max)}</span></div>`;
 }
 
 // ─── RENDER RATIOS ───────────────────────────────
@@ -590,6 +726,9 @@ function renderRatios() {
 
     Object.values(containers).forEach(c => c.innerHTML = '');
 
+    const catCounts = {};
+    const statusCounts = { ok: 0, warn: 0, danger: 0 };
+
     Object.entries(rasyoMeta).forEach(([key, meta]) => {
         const v = rasyolar[key];
         if (v === undefined) return;
@@ -599,86 +738,280 @@ function renderRatios() {
         const badgeMap = { ok: 'badge-ok', warn: 'badge-warn', danger: 'badge-danger' };
         const labelMap = { ok: 'Good', warn: 'Caution', danger: 'Critical' };
         const fv = formatVal(v, meta);
+        const bench = benchMap[key];
+        const host = containers[meta.kategori];
+        if (!host) return;
 
         const card = document.createElement('div');
         card.className = `ratio-card ${yorum.durum}`;
         card.innerHTML = `
             <div class="ratio-name">${meta.ad}</div>
             <div class="ratio-value">${fv}</div>
-            <div class="ratio-formula">${meta.formul}</div>
+            ${benchHTML(bench, v)}
+            ${benchLegend(bench)}
             <div class="ratio-comment">${yorum.mesaj}</div>
+            <div class="ratio-formula">${meta.formul}</div>
             <span class="ratio-badge ${badgeMap[yorum.durum]}">${labelMap[yorum.durum]}</span>
         `;
-        containers[meta.kategori]?.appendChild(card);
+        host.appendChild(card);
+        catCounts[meta.kategori] = (catCounts[meta.kategori] || 0) + 1;
+        statusCounts[yorum.durum]++;
     });
+
+    const catIds = { likidite: 'cntLikidite', kaldirac: 'cntKaldirac', karlilik: 'cntKarlilik', faaliyet: 'cntFaaliyet', piyasa: 'cntPiyasa' };
+    Object.entries(catIds).forEach(([cat, id]) => {
+        const el = document.getElementById(id);
+        if (el) {
+            const n = catCounts[cat] || 0;
+            el.textContent = `${n} ${n === 1 ? 'ratio' : 'ratios'}`;
+        }
+    });
+
+    const summary = document.getElementById('ratioSummary');
+    summary.hidden = false;
+    summary.innerHTML = `
+        <span class="sum-chip ok"><span class="dot"></span>${statusCounts.ok} good</span>
+        <span class="sum-chip warn"><span class="dot"></span>${statusCounts.warn} caution</span>
+        <span class="sum-chip danger"><span class="dot"></span>${statusCounts.danger} critical</span>
+    `;
 }
 
 // ─── RENDER KPIs ───────────────────────────────────
 function renderKPIs() {
-    const kpiDef = [
-        { key: 'cariOran', icon: '💧', label: 'Current Ratio', format: null },
-        { key: 'asitTest', icon: '⚗️', label: 'Acid-Test Ratio', format: null },
-        { key: 'borcOzkaynak', icon: '⚖️', label: 'Debt / Equity', format: null },
-        { key: 'netKarMarji', icon: '📈', label: 'Net Profit Margin', format: 'percent' },
-        { key: 'aktifDevir', icon: '🔄', label: 'Asset Turnover', format: null },
-        { key: 'roe', icon: '💰', label: 'ROE', format: 'percent' },
-    ];
-
     const grid = document.getElementById('kpiGrid');
     grid.innerHTML = '';
 
-    const alerts = [];
-
-    kpiDef.forEach(def => {
+    KPI_DEFS.forEach(def => {
         const v = rasyolar[def.key];
         const meta = rasyoMeta[def.key];
         const yorum = meta ? meta.yorum(v) : null;
-        const fv = v !== null && v !== undefined ? formatVal(v, { format: def.format }) : '—';
+        const hasValue = v !== null && v !== undefined && !isNaN(v);
         const status = yorum ? yorum.durum : 'empty';
 
         const card = document.createElement('div');
         card.className = `kpi-card ${status !== 'empty' ? 'status-' + status : 'kpi-empty'}`;
         card.innerHTML = `
-            <div class="kpi-icon">${def.icon}</div>
-            <div class="kpi-label">${def.label}</div>
-            <div class="kpi-value">${fv}</div>
+            <div class="kpi-label">${def.label}<span class="kpi-status" aria-hidden="true"></span></div>
+            <div class="kpi-value">${hasValue ? formatVal(v, { format: def.format }) : '—'}</div>
+            ${benchHTML(def.bench, hasValue ? v : null)}
         `;
         grid.appendChild(card);
+        if (hasValue) countUp(card.querySelector('.kpi-value'), v, x => formatVal(x, { format: def.format }));
+    });
 
-        if (yorum && yorum.durum === 'danger') {
-            alerts.push({ label: def.label, mesaj: yorum.mesaj });
-        }
+    // Critical feed: every ratio (not just the six KPI tiles) in trouble
+    const alerts = [];
+    Object.entries(rasyoMeta).forEach(([key, meta]) => {
+        const yorum = meta.yorum(rasyolar[key]);
+        if (yorum && yorum.durum === 'danger') alerts.push({ label: meta.ad, mesaj: yorum.mesaj });
     });
 
     const alertsBox = document.getElementById('alertsBox');
     const alertsList = document.getElementById('alertsList');
+    const alertsCount = document.getElementById('alertsCount');
+    alertsBox.classList.remove('hidden');
+    alertsBox.classList.toggle('is-clear', alerts.length === 0);
+    alertsCount.textContent = alerts.length ? `${alerts.length} open` : 'none open';
+    alertsList.innerHTML = alerts.length
+        ? alerts.map(a => `<div class="alert-item"><span class="alert-icon"><svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg></span><div><strong>${a.label}:</strong> ${a.mesaj}</div></div>`).join('')
+        : `<div class="alerts-clear"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg> No critical alerts — every ratio is inside an acceptable range.</div>`;
+}
 
-    if (alerts.length > 0) {
-        alertsBox.classList.remove('hidden');
-        alertsList.innerHTML = alerts.map(a =>
-            `<div class="alert-item"><span class="alert-icon">🔴</span><div><strong>${a.label}:</strong> ${a.mesaj}</div></div>`
-        ).join('');
+function updateKPIs() {
+    document.getElementById('kpiGrid').innerHTML = KPI_DEFS.map(def => `
+        <div class="kpi-card kpi-empty">
+            <div class="kpi-label">${def.label}<span class="kpi-status" aria-hidden="true"></span></div>
+            <div class="kpi-value">—</div>
+            ${benchHTML(def.bench, null)}
+        </div>`).join('');
+    const alertsBox = document.getElementById('alertsBox');
+    alertsBox.classList.add('is-clear');
+    document.getElementById('alertsCount').textContent = 'awaiting data';
+    document.getElementById('alertsList').innerHTML =
+        `<p class="glossary-empty">Run an analysis to surface any ratio in the critical range.</p>`;
+}
+
+// ─── SCORE BREAKDOWN (dashboard) ───────────────────
+function scoreComponents() {
+    const debtSafety = 2 - (rasyolar.borcOzkaynak !== null && rasyolar.borcOzkaynak !== undefined ? rasyolar.borcOzkaynak : 2);
+    return [
+        { name: 'Current Ratio', norm: normalize(rasyolar.cariOran, 0, 3), raw: formatVal(rasyolar.cariOran, {}) },
+        { name: 'Acid-Test', norm: normalize(rasyolar.asitTest, 0, 2), raw: formatVal(rasyolar.asitTest, {}) },
+        { name: 'Net Profit Margin', norm: normalize(rasyolar.netKarMarji, 0, 0.3), raw: formatVal(rasyolar.netKarMarji, { format: 'percent' }) },
+        { name: 'ROE', norm: normalize(rasyolar.roe, 0, 0.3), raw: formatVal(rasyolar.roe, { format: 'percent' }) },
+        { name: 'Asset Turnover', norm: normalize(rasyolar.aktifDevir, 0, 3), raw: formatVal(rasyolar.aktifDevir, {}) },
+        { name: 'Debt Safety', norm: normalize(debtSafety, 0, 2), raw: formatVal(rasyolar.borcOzkaynak, {}) },
+    ];
+}
+
+function renderScoreBreakdown() {
+    const list = document.getElementById('breakdownList');
+    if (!analizYapildi) {
+        list.innerHTML = scoreComponents().map(p =>
+            `<div class="bd-row idle">
+                <div class="bd-top"><span class="bd-name">${p.name}</span><span class="bd-val">—</span></div>
+                <div class="bench"><span class="bench-fill" style="width:0%"></span></div>
+            </div>`).join('');
+        return;
+    }
+    const parts = scoreComponents();
+    list.innerHTML = parts.map(p => {
+        const pct = Math.round(Math.min(1, Math.max(0, p.norm)) * 100);
+        const durum = pct >= 70 ? 'ok' : pct >= 40 ? 'warn' : 'danger';
+        return `<div class="bd-row ${durum}">
+            <div class="bd-top"><span class="bd-name">${p.name}</span><span class="bd-val">${pct}% · ${p.raw}</span></div>
+            <div class="bench"><span class="bench-fill" style="width:${pct}%"></span></div>
+        </div>`;
+    }).join('');
+}
+
+// ─── BALANCE SHEET STRUCTURE (dashboard) ───────────
+function structRow(label, total, segs) {
+    const t = total > 0 ? total : 1;
+    const bar = segs.map(s => {
+        const p = (s.value / t) * 100;
+        return `<span class="seg ${s.cls}" style="width:${p.toFixed(1)}%">${p >= 14 ? Math.round(p) + '%' : ''}</span>`;
+    }).join('');
+    const legend = segs.map(s =>
+        `<span class="legend-item"><i class="legend-swatch ${s.cls}" aria-hidden="true"></i>${s.name} <b>${formatTL(s.value)}</b></span>`
+    ).join('');
+    return `<div class="struct-row">
+        <div class="struct-label"><span>${label}</span><span class="struct-total">${formatTL(total)}</span></div>
+        <div class="struct-bar" role="img" aria-label="${label}: ${segs.map(s => `${s.name} ${formatTL(s.value)}`).join(', ')}">${bar}</div>
+        <div class="struct-legend">${legend}</div>
+    </div>`;
+}
+
+function renderStructure() {
+    const box = document.getElementById('structureBox');
+    const meta = document.getElementById('structureMeta');
+
+    if (!analizYapildi) {
+        meta.textContent = 'Awaiting data';
+        box.innerHTML = `<p class="glossary-empty">Run an analysis to see how the balance sheet is financed.</p>`;
+        return;
+    }
+
+    const ta = g('toplamAktif');
+    const dv = g('donenVarliklar');
+    const ud = Math.max(0, ta - dv);
+    const kvb = g('kisaVadeliBorclar');
+    const uvb = g('uzunVadeliBorclar');
+    const oz = g('ozkaynak');
+    const fund = kvb + uvb + oz;
+
+    meta.textContent = `Total assets ${formatTL(ta)}`;
+
+    if (!ta && !fund) {
+        box.innerHTML = `<p class="glossary-empty">No balance sheet figures entered yet.</p>`;
+        return;
+    }
+
+    box.innerHTML =
+        structRow('Assets', ta, [
+            { name: 'Current assets', value: dv, cls: 'seg-a' },
+            { name: 'Non-current assets', value: ud, cls: 'seg-b' },
+        ]) +
+        structRow('Funding', fund, [
+            { name: 'Current liabilities', value: kvb, cls: 'seg-c' },
+            { name: 'Long-term liabilities', value: uvb, cls: 'seg-d' },
+            { name: 'Equity', value: oz, cls: 'seg-a' },
+        ]);
+}
+
+// ─── CATEGORY VERDICTS (charts) ────────────────────
+const CAT_META = [
+    { key: 'likidite', ad: 'Liquidity' },
+    { key: 'kaldirac', ad: 'Leverage' },
+    { key: 'karlilik', ad: 'Profitability' },
+    { key: 'faaliyet', ad: 'Activity' },
+    { key: 'piyasa', ad: 'Market' },
+];
+
+function renderVerdicts() {
+    const list = document.getElementById('verdictList');
+    if (!list) return;
+    const tag = document.querySelector('#verdictCard .chart-tag');
+    if (tag) tag.textContent = `${Object.keys(rasyoMeta).length} ratios`;
+
+    if (!analizYapildi) {
+        list.innerHTML = CAT_META.map(c =>
+            `<div class="verdict-row idle">
+                <div class="v-top"><span class="v-name">${c.ad}</span><span class="v-count">—</span></div>
+                <div class="v-bar"><span class="v-none" style="width:100%"></span></div>
+            </div>`).join('');
+        return;
+    }
+
+    list.innerHTML = CAT_META.map(c => {
+        const counts = { ok: 0, warn: 0, danger: 0 };
+        let total = 0;
+        Object.entries(rasyoMeta).forEach(([key, meta]) => {
+            if (meta.kategori !== c.key) return;
+            const y = meta.yorum(rasyolar[key]);
+            if (!y) return;
+            counts[y.durum]++;
+            total++;
+        });
+        if (!total) {
+            return `<div class="verdict-row idle">
+                <div class="v-top"><span class="v-name">${c.ad}</span><span class="v-count">no data</span></div>
+                <div class="v-bar"><span class="v-none" style="width:100%"></span></div>
+            </div>`;
+        }
+        const pct = n => (n / total * 100).toFixed(1);
+        const worst = counts.danger ? 'danger' : counts.warn ? 'warn' : 'ok';
+        const label = counts.danger
+            ? `${counts.danger} critical / ${total}`
+            : counts.warn
+                ? `${counts.warn} caution / ${total}`
+                : `${counts.ok} good / ${total}`;
+        return `<div class="verdict-row">
+            <div class="v-top"><span class="v-name">${c.ad}</span><span class="v-count ${worst}">${label}</span></div>
+            <div class="v-bar">
+                ${counts.ok ? `<span class="v-ok" style="width:${pct(counts.ok)}%"></span>` : ''}
+                ${counts.warn ? `<span class="v-warn" style="width:${pct(counts.warn)}%"></span>` : ''}
+                ${counts.danger ? `<span class="v-danger" style="width:${pct(counts.danger)}%"></span>` : ''}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// ─── BALANCE CHECK (data entry) ────────────────────
+function renderBalanceCheck() {
+    const box = document.getElementById('balanceCheck');
+    const text = document.getElementById('balanceCheckText');
+    const ta = g('toplamAktif');
+    const tb = g('toplamBorclar');
+    const oz = g('ozkaynak');
+
+    if (!ta || (!tb && !oz)) { box.hidden = true; return; }
+
+    box.hidden = false;
+    const diff = ta - (tb + oz);
+    const tolerance = Math.abs(ta) * 0.01;
+
+    if (Math.abs(diff) <= tolerance) {
+        box.className = 'balance-check ok';
+        text.textContent = `Balance sheet balances: assets ${formatTL(ta)} = liabilities ${formatTL(tb)} + equity ${formatTL(oz)}.`;
     } else {
-        alertsBox.classList.add('hidden');
+        box.className = 'balance-check warn';
+        text.textContent = `Out of balance by ${formatTL(Math.abs(diff))} — assets should equal liabilities + equity. Check the totals before analyzing.`;
     }
 }
 
-function updateKPIs(data) {
-    const grid = document.getElementById('kpiGrid');
-    grid.innerHTML = `
-        <div class="kpi-card kpi-empty"><div class="kpi-icon">💧</div><div class="kpi-label">Current Ratio</div><div class="kpi-value">—</div></div>
-        <div class="kpi-card kpi-empty"><div class="kpi-icon">⚗️</div><div class="kpi-label">Acid-Test Ratio</div><div class="kpi-value">—</div></div>
-        <div class="kpi-card kpi-empty"><div class="kpi-icon">⚖️</div><div class="kpi-label">Debt / Equity</div><div class="kpi-value">—</div></div>
-        <div class="kpi-card kpi-empty"><div class="kpi-icon">📈</div><div class="kpi-label">Net Profit Margin</div><div class="kpi-value">—</div></div>
-        <div class="kpi-card kpi-empty"><div class="kpi-icon">🔄</div><div class="kpi-label">Asset Turnover</div><div class="kpi-value">—</div></div>
-        <div class="kpi-card kpi-empty"><div class="kpi-icon">💰</div><div class="kpi-label">ROE</div><div class="kpi-value">—</div></div>
-    `;
+function bindBalanceCheck() {
+    ['toplamAktif', 'toplamBorclar', 'ozkaynak'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', renderBalanceCheck);
+    });
 }
+bindBalanceCheck();
 
 function updateStatus(s) {
-    const dot = document.getElementById('statusDot');
+    const pill = document.getElementById('statusPill');
     const txt = document.getElementById('statusText');
-    if (!s) { dot.className = 'status-dot'; txt.textContent = 'Awaiting Data'; return; }
+    if (!s) { pill.className = 'status-pill'; txt.textContent = 'Awaiting Data'; return; }
 
     const alerts = Object.entries(rasyoMeta).filter(([k, m]) => {
         const v = rasyolar[k];
@@ -687,29 +1020,76 @@ function updateStatus(s) {
     });
 
     if (alerts.length >= 2) {
-        dot.className = 'status-dot danger';
+        pill.className = 'status-pill danger';
         txt.textContent = `${alerts.length} Critical Alerts`;
     } else if (alerts.length === 1) {
-        dot.className = 'status-dot warn';
+        pill.className = 'status-pill warn';
         txt.textContent = '1 Critical Alert';
     } else {
-        dot.className = 'status-dot ok';
+        pill.className = 'status-pill ok';
         txt.textContent = 'Analysis Complete';
     }
 }
 
 // ─── CHARTS ────────────────────────────────────────
 const CHART_COLORS = {
-    ok: '#4ade80',
-    warn: '#f59e0b',
-    danger: '#ef4444',
-    neutral: '#6b7280',
-    bg: '#1e2332',
+    ok: TOKENS.accent,
+    warn: TOKENS.warn,
+    danger: TOKENS.danger,
+    info: TOKENS.info,
+    purple: '#a78bfa',
+    neutral: TOKENS.text3,
+    grid: TOKENS.grid,
+    text: TOKENS.text2,
+    track: TOKENS.track,
+    bg: TOKENS.surface,
 };
 
-Chart.defaults.color = '#9ba3b8';
-Chart.defaults.borderColor = '#2e3347';
-Chart.defaults.font.family = 'DM Sans';
+Chart.defaults.color = TOKENS.text2;
+Chart.defaults.borderColor = TOKENS.grid;
+Chart.defaults.font.family = "'DM Sans', system-ui, sans-serif";
+Chart.defaults.font.size = 11;
+
+// Centre caption for doughnut charts (registered once, opt-in per chart)
+const centerTextPlugin = {
+    id: 'centerText',
+    afterDraw(chart, args, opts) {
+        if (!opts || !opts.text) return;
+        const { ctx, chartArea } = chart;
+        if (!chartArea) return;
+        const cx = (chartArea.left + chartArea.right) / 2;
+        const cy = (chartArea.top + chartArea.bottom) / 2;
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = TOKENS.text;
+        ctx.font = "600 17px 'DM Sans', sans-serif";
+        ctx.fillText(opts.text, cx, cy - 7);
+        ctx.fillStyle = TOKENS.text3;
+        ctx.font = "500 10.5px 'DM Sans', sans-serif";
+        ctx.fillText(opts.sub || '', cx, cy + 12);
+        ctx.restore();
+    }
+};
+Chart.register(centerTextPlugin);
+
+// Vertical gradient fill that follows the plotted area
+function areaFill(color, top = 0.38, bottom = 0.02) {
+    return (c) => {
+        const { ctx, chartArea } = c.chart;
+        if (!chartArea) return withAlpha(color, top);
+        const grad = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+        grad.addColorStop(0, withAlpha(color, top));
+        grad.addColorStop(1, withAlpha(color, bottom));
+        return grad;
+    };
+}
+
+const axisBase = {
+    grid: { color: CHART_COLORS.grid, drawTicks: false },
+    border: { display: false },
+    ticks: { color: CHART_COLORS.text, padding: 6 },
+};
 
 function destroyChart(id) {
     if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; }
@@ -719,7 +1099,7 @@ function renderCharts() {
     document.getElementById('noDataMsgChart').classList.add('hidden');
     document.getElementById('chartResults').classList.remove('hidden');
 
-    // Liquidity bar chart
+    // Liquidity: value per ratio vs its minimum threshold
     destroyChart('chartLikidite');
     const ctxL = document.getElementById('chartLikidite').getContext('2d');
     const likvars = [rasyolar.cariOran, rasyolar.asitTest, rasyolar.nakitOrani];
@@ -732,31 +1112,38 @@ function renderCharts() {
                 {
                     label: 'Value',
                     data: likvars.map(v => v !== null ? parseFloat(v.toFixed(3)) : 0),
-                    backgroundColor: likvars.map((v, i) => v !== null && v >= limitsL[i] ? '#4ade8066' : '#ef444466'),
-                    borderColor: likvars.map((v, i) => v !== null && v >= limitsL[i] ? '#4ade80' : '#ef4444'),
-                    borderWidth: 2,
-                    borderRadius: 6,
+                    backgroundColor: likvars.map((v, i) => v !== null && v >= limitsL[i] ? withAlpha(CHART_COLORS.ok, 0.55) : withAlpha(CHART_COLORS.danger, 0.55)),
+                    borderColor: likvars.map((v, i) => v !== null && v >= limitsL[i] ? CHART_COLORS.ok : CHART_COLORS.danger),
+                    borderWidth: 1.5,
+                    borderRadius: 5,
+                    barPercentage: 0.6,
                 },
                 {
-                    label: 'Min. Threshold',
+                    label: 'Min. threshold',
                     data: limitsL,
-                    type: 'line',
-                    borderColor: '#f59e0b',
-                    borderDash: [5, 5],
-                    pointRadius: 0,
-                    borderWidth: 2,
-                    fill: false,
+                    backgroundColor: withAlpha(CHART_COLORS.warn, 0.22),
+                    borderColor: withAlpha(CHART_COLORS.warn, 0.75),
+                    borderWidth: 1.5,
+                    borderRadius: 5,
+                    barPercentage: 0.6,
                 }
             ]
         },
         options: {
             responsive: true,
-            plugins: { legend: { display: true } },
-            scales: { y: { beginAtZero: true } }
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { usePointStyle: true, boxWidth: 8, padding: 14 } },
+                tooltip: { backgroundColor: CHART_COLORS.bg, borderColor: CHART_COLORS.grid, borderWidth: 1, padding: 10, cornerRadius: 8 },
+            },
+            scales: {
+                x: { ...axisBase, grid: { display: false } },
+                y: { ...axisBase, beginAtZero: true },
+            }
         }
     });
 
-    // Profitability bar chart (percentages)
+    // Profitability in percent
     destroyChart('chartKarlilik');
     const ctxK = document.getElementById('chartKarlilik').getContext('2d');
     const kvals = [rasyolar.brutKarMarji, rasyolar.faaliyetKarMarji, rasyolar.netKarMarji, rasyolar.roe, rasyolar.roa];
@@ -767,20 +1154,28 @@ function renderCharts() {
             datasets: [{
                 label: '%',
                 data: kvals.map(v => v !== null ? parseFloat((v * 100).toFixed(1)) : 0),
-                backgroundColor: kvals.map(v => v !== null && v > 0.05 ? '#4ade8055' : '#ef444455'),
-                borderColor: kvals.map(v => v !== null && v > 0.05 ? '#4ade80' : '#ef4444'),
-                borderWidth: 2,
-                borderRadius: 6,
+                backgroundColor: kvals.map(v => v !== null && v > 0.05 ? withAlpha(CHART_COLORS.ok, 0.5) : withAlpha(CHART_COLORS.danger, 0.5)),
+                borderColor: kvals.map(v => v !== null && v > 0.05 ? CHART_COLORS.ok : CHART_COLORS.danger),
+                borderWidth: 1.5,
+                borderRadius: 5,
+                barPercentage: 0.62,
             }]
         },
         options: {
             responsive: true,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { callback: v => v + '%' } } }
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { backgroundColor: CHART_COLORS.bg, borderColor: CHART_COLORS.grid, borderWidth: 1, padding: 10, cornerRadius: 8, callbacks: { label: c => c.parsed.y + '%' } },
+            },
+            scales: {
+                x: { ...axisBase, grid: { display: false } },
+                y: { ...axisBase, beginAtZero: true, ticks: { ...axisBase.ticks, callback: v => v + '%' } },
+            }
         }
     });
 
-    // Asset composition doughnut
+    // Asset composition
     destroyChart('chartVarlik');
     const ctxV = document.getElementById('chartVarlik').getContext('2d');
     const dv2 = g('donenVarliklar');
@@ -793,21 +1188,25 @@ function renderCharts() {
             labels: ['Current Assets', 'Non-Current Assets'],
             datasets: [{
                 data: [dv_d, ud_d],
-                backgroundColor: ['#4ade8066', '#3b82f666'],
-                borderColor: ['#4ade80', '#3b82f6'],
+                backgroundColor: [withAlpha(CHART_COLORS.ok, 0.8), withAlpha(CHART_COLORS.info, 0.75)],
+                borderColor: [CHART_COLORS.ok, CHART_COLORS.info],
                 borderWidth: 2,
+                hoverOffset: 6,
             }]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
             plugins: {
-                legend: { position: 'bottom' },
-                tooltip: { callbacks: { label: ctx => ctx.label + ': ' + formatTL(ctx.raw) } }
+                legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, padding: 14 } },
+                tooltip: { backgroundColor: CHART_COLORS.bg, borderColor: CHART_COLORS.grid, borderWidth: 1, padding: 10, cornerRadius: 8, callbacks: { label: ctx => ctx.label + ': ' + formatTL(ctx.raw) } },
+                centerText: { text: formatTL(ta2), sub: 'Total assets' },
             }
         }
     });
 
-    // Liability structure doughnut
+    // Liability structure
     destroyChart('chartBorc');
     const ctxB = document.getElementById('chartBorc').getContext('2d');
     const kvb2 = g('kisaVadeliBorclar');
@@ -819,37 +1218,28 @@ function renderCharts() {
             labels: ['Current Liabilities', 'Long-Term Liabilities', 'Equity'],
             datasets: [{
                 data: [kvb2 || 0, uvb2 || 0, oz2 || 0],
-                backgroundColor: ['#ef444466', '#f59e0b66', '#4ade8066'],
-                borderColor: ['#ef4444', '#f59e0b', '#4ade80'],
+                backgroundColor: [withAlpha(CHART_COLORS.danger, 0.8), withAlpha(CHART_COLORS.warn, 0.8), withAlpha(CHART_COLORS.ok, 0.8)],
+                borderColor: [CHART_COLORS.danger, CHART_COLORS.warn, CHART_COLORS.ok],
                 borderWidth: 2,
+                hoverOffset: 6,
             }]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
             plugins: {
-                legend: { position: 'bottom' },
-                tooltip: { callbacks: { label: ctx => ctx.label + ': ' + formatTL(ctx.raw) } }
+                legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, padding: 14 } },
+                tooltip: { backgroundColor: CHART_COLORS.bg, borderColor: CHART_COLORS.grid, borderWidth: 1, padding: 10, cornerRadius: 8, callbacks: { label: ctx => ctx.label + ': ' + formatTL(ctx.raw) } },
+                centerText: { text: formatTL(kvb2 + uvb2 + oz2), sub: 'Liabilities + equity' },
             }
         }
     });
 
-    if (window.FcViz) {
-        FcViz.dupont(document.getElementById('vizDupont'), rasyolar);
-        FcViz.bands(document.getElementById('vizBands'), rasyolar);
-    }
-
-    // Radar
+    // Radar — the six score components, 0-100
     destroyChart('chartRadar');
     const ctxR = document.getElementById('chartRadar').getContext('2d');
-
-    const radarVals = [
-        normalize(rasyolar.cariOran, 0, 3) * 100,
-        normalize(rasyolar.asitTest, 0, 2) * 100,
-        normalize(rasyolar.netKarMarji, 0, 0.3) * 100,
-        normalize(rasyolar.roe, 0, 0.3) * 100,
-        normalize(rasyolar.aktifDevir, 0, 3) * 100,
-        normalize(2 - (rasyolar.borcOzkaynak || 2), 0, 2) * 100,
-    ];
+    const radarVals = scoreComponents().map(p => Math.round(Math.min(1, Math.max(0, p.norm)) * 100));
 
     chartInstances.chartRadar = new Chart(ctxR, {
         type: 'radar',
@@ -858,25 +1248,38 @@ function renderCharts() {
             datasets: [{
                 label: 'Company',
                 data: radarVals,
-                backgroundColor: 'rgba(74,222,128,0.15)',
-                borderColor: '#4ade80',
-                pointBackgroundColor: '#4ade80',
+                backgroundColor: withAlpha(CHART_COLORS.ok, 0.16),
+                borderColor: CHART_COLORS.ok,
+                pointBackgroundColor: CHART_COLORS.ok,
+                pointBorderColor: TOKENS.bg,
+                pointRadius: 4,
+                pointHoverRadius: 6,
                 borderWidth: 2,
             }]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             scales: {
                 r: {
                     min: 0, max: 100,
-                    ticks: { display: false },
-                    grid: { color: '#2e3347' },
-                    pointLabels: { color: '#9ba3b8', font: { size: 12 } }
+                    ticks: { display: false, stepSize: 25 },
+                    grid: { color: CHART_COLORS.grid },
+                    angleLines: { color: CHART_COLORS.grid },
+                    pointLabels: { color: CHART_COLORS.text, font: { size: 11.5, weight: '500' } }
                 }
             },
-            plugins: { legend: { display: false } }
+            plugins: {
+                legend: { display: false },
+                tooltip: { backgroundColor: CHART_COLORS.bg, borderColor: CHART_COLORS.grid, borderWidth: 1, padding: 10, cornerRadius: 8, callbacks: { label: c => c.parsed.r + ' / 100' } },
+            }
         }
     });
+
+    if (window.FcViz) {
+        FcViz.dupont(document.getElementById('vizDupont'), rasyolar);
+        FcViz.bands(document.getElementById('vizBands'), rasyolar);
+    }
 }
 
 function formatTL(v) {
@@ -906,11 +1309,22 @@ function renderReport() {
     }).join('');
 
     const date = new Date().toLocaleDateString('en-US');
+    const skor = saglikSkoru === null ? null : saglikSkoru;
+    const { durum, etiket } = saglikDurumu(skor === null ? 0 : skor);
 
     body.innerHTML = `
-        <div class="report-section">
-            <h3>Financial Analysis Report</h3>
-            <p style="color:var(--text2);font-size:13px;">Date: ${date} &nbsp;|&nbsp; Analysis: Financial Compass</p>
+        <div class="report-hero">
+            <div class="report-hero-left">
+                <h3>Financial Analysis Report</h3>
+                <p>Generated ${date} &nbsp;·&nbsp; Financial Compass</p>
+            </div>
+            <div class="report-score">
+                <div>
+                    <div class="report-score-num ${skor === null ? '' : durum}">${skor === null ? '—' : skor}</div>
+                    <div class="report-score-label">Health score / 100</div>
+                </div>
+                ${skor === null ? '' : `<span class="report-score-chip ${durum}">${etiket}</span>`}
+            </div>
         </div>
         <div class="report-section">
             <h3>All Ratio Results</h3>
@@ -970,44 +1384,71 @@ function sablonIndir() {
 
 // ─── GLOSSARY ────────────────────────────────────────
 const sozluk = [
-    { terim: 'Current Ratio', aciklama: 'Current assets divided by current liabilities. Shows the company\'s capacity to cover short-term obligations. Generally accepted as healthy between 1.5–2.' },
-    { terim: 'Acid-Test Ratio (Quick Ratio)', aciklama: 'Current assets minus inventory, divided by current liabilities. Measures liquidity in the scenario where inventory cannot be sold.' },
-    { terim: 'Cash Ratio', aciklama: 'Only cash and cash equivalents divided by current liabilities. The strictest liquidity indicator.' },
-    { terim: 'Debt / Equity (Leverage)', aciklama: 'Total liabilities divided by equity. Shows how much external financing the company uses. Below 1 is generally considered safe.' },
-    { terim: 'Financial Leverage Ratio', aciklama: 'Total assets divided by equity. Shows what fraction of assets is financed with debt.' },
-    { terim: 'Interest Coverage Ratio', aciklama: 'EBIT divided by interest expense. Shows how comfortably the company covers its interest payments. 3 or above is considered healthy.' },
-    { terim: 'Gross Profit Margin', aciklama: 'Gross profit divided by net sales. Shows the profit margin remaining after production/purchase costs.' },
-    { terim: 'Net Profit Margin', aciklama: 'Net profit divided by net sales. Measures final profitability after all expenses are covered.' },
-    { terim: 'ROE (Return on Equity)', aciklama: 'Net profit divided by equity. Shows how efficiently shareholders\' invested capital is being used.' },
-    { terim: 'ROA (Return on Assets)', aciklama: 'Net profit divided by total assets. Shows how efficiently the company uses all of its assets.' },
-    { terim: 'Asset Turnover', aciklama: 'Net sales divided by total assets. Measures how quickly assets convert into sales. Higher is preferred.' },
-    { terim: 'Receivables Turnover', aciklama: 'Net sales divided by accounts receivable. Shows how quickly receivables are collected.' },
-    { terim: 'Inventory Turnover', aciklama: 'Net sales divided by inventory. Measures how quickly inventory converts into sales.' },
-    { terim: 'P/E Ratio (Price/Earnings)', aciklama: 'Share price divided by earnings per share. Shows how many years of earnings the market is valuing the company at.' },
-    { terim: 'EPS (Earnings Per Share)', aciklama: 'Net profit divided by total number of shares. Shows the profit attributable to each share.' },
-    { terim: 'EBIT', aciklama: 'Earnings Before Interest and Taxes. Shows the company\'s operating profitability.' },
-    { terim: 'Equity', aciklama: 'Total assets minus total liabilities. The company\'s net worth attributable to shareholders.' },
-    { terim: 'Liquidity', aciklama: 'An asset\'s ability to be quickly converted to cash. High liquidity indicates strong debt-repayment capacity.' },
+    { terim: 'Current Ratio', kat: 'Liquidity', aciklama: 'Current assets divided by current liabilities. Shows the company\'s capacity to cover short-term obligations. Generally accepted as healthy between 1.5–2.' },
+    { terim: 'Acid-Test Ratio (Quick Ratio)', kat: 'Liquidity', aciklama: 'Current assets minus inventory, divided by current liabilities. Measures liquidity in the scenario where inventory cannot be sold.' },
+    { terim: 'Cash Ratio', kat: 'Liquidity', aciklama: 'Only cash and cash equivalents divided by current liabilities. The strictest liquidity indicator.' },
+    { terim: 'Debt / Equity (Leverage)', kat: 'Leverage', aciklama: 'Total liabilities divided by equity. Shows how much external financing the company uses. Below 1 is generally considered safe.' },
+    { terim: 'Financial Leverage Ratio', kat: 'Leverage', aciklama: 'Total assets divided by equity. Shows what fraction of assets is financed with debt.' },
+    { terim: 'Interest Coverage Ratio', kat: 'Leverage', aciklama: 'EBIT divided by interest expense. Shows how comfortably the company covers its interest payments. 3 or above is considered healthy.' },
+    { terim: 'Gross Profit Margin', kat: 'Profitability', aciklama: 'Gross profit divided by net sales. Shows the profit margin remaining after production/purchase costs.' },
+    { terim: 'Net Profit Margin', kat: 'Profitability', aciklama: 'Net profit divided by net sales. Measures final profitability after all expenses are covered.' },
+    { terim: 'ROE (Return on Equity)', kat: 'Profitability', aciklama: 'Net profit divided by equity. Shows how efficiently shareholders\' invested capital is being used.' },
+    { terim: 'ROA (Return on Assets)', kat: 'Profitability', aciklama: 'Net profit divided by total assets. Shows how efficiently the company uses all of its assets.' },
+    { terim: 'EBIT', kat: 'Profitability', aciklama: 'Earnings Before Interest and Taxes. Shows the company\'s operating profitability.' },
+    { terim: 'Asset Turnover', kat: 'Activity', aciklama: 'Net sales divided by total assets. Measures how quickly assets convert into sales. Higher is preferred.' },
+    { terim: 'Receivables Turnover', kat: 'Activity', aciklama: 'Net sales divided by accounts receivable. Shows how quickly receivables are collected.' },
+    { terim: 'Inventory Turnover', kat: 'Activity', aciklama: 'Net sales divided by inventory. Measures how quickly inventory converts into sales.' },
+    { terim: 'P/E Ratio (Price/Earnings)', kat: 'Market', aciklama: 'Share price divided by earnings per share. Shows how many years of earnings the market is valuing the company at.' },
+    { terim: 'EPS (Earnings Per Share)', kat: 'Market', aciklama: 'Net profit divided by total number of shares. Shows the profit attributable to each share.' },
+    { terim: 'Equity', kat: 'Basics', aciklama: 'Total assets minus total liabilities. The company\'s net worth attributable to shareholders.' },
+    { terim: 'Liquidity', kat: 'Basics', aciklama: 'An asset\'s ability to be quickly converted to cash. High liquidity indicates strong debt-repayment capacity.' },
 ];
+
+let glossaryKat = 'All';
+
+function glossaryCats() {
+    return ['All', ...new Set(sozluk.map(s => s.kat))];
+}
+
+function renderGlossaryChips() {
+    const host = document.getElementById('glossaryChips');
+    host.innerHTML = glossaryCats().map(kat => {
+        const n = kat === 'All' ? sozluk.length : sozluk.filter(s => s.kat === kat).length;
+        return `<button type="button" class="g-chip ${glossaryKat === kat ? 'active' : ''}" onclick="setGlossaryKat('${kat}')">${kat} · ${n}</button>`;
+    }).join('');
+}
+
+function setGlossaryKat(kat) {
+    glossaryKat = kat;
+    renderGlossaryChips();
+    renderGlossary(document.getElementById('glossarySearch').value);
+}
 
 function renderGlossary(filter = '') {
     const list = document.getElementById('glossaryList');
+    const f = filter.trim().toLowerCase();
     const filtered = sozluk.filter(s =>
-        s.terim.toLowerCase().includes(filter.toLowerCase()) ||
-        s.aciklama.toLowerCase().includes(filter.toLowerCase())
+        (glossaryKat === 'All' || s.kat === glossaryKat) &&
+        (s.terim.toLowerCase().includes(f) || s.aciklama.toLowerCase().includes(f))
     );
-    list.innerHTML = filtered.map((s, i) => `
-        <div class="glossary-item" id="gi-${i}">
-            <h4 onclick="toggleGlossary(${i})">${s.terim} <span>+</span></h4>
-            <p>${s.aciklama}</p>
-        </div>
-    `).join('');
+
+    document.getElementById('glossaryCount').textContent = `${filtered.length} of ${sozluk.length} terms`;
+
+    list.innerHTML = filtered.length
+        ? filtered.map((s, i) => `
+            <div class="glossary-item" id="gi-${i}">
+                <h4 onclick="toggleGlossary(${i})">${s.terim}<span class="g-term-tag">${s.kat}</span><span class="g-toggle">+</span></h4>
+                <p>${s.aciklama}</p>
+            </div>
+        `).join('')
+        : `<p class="glossary-empty">No terms match “${filter}”. Try another word or switch category.</p>`;
 }
 
 function toggleGlossary(i) {
     const el = document.getElementById('gi-' + i);
+    if (!el) return;
     el.classList.toggle('open');
-    el.querySelector('span').textContent = el.classList.contains('open') ? '−' : '+';
+    el.querySelector('.g-toggle').textContent = el.classList.contains('open') ? '−' : '+';
 }
 
 function filterGlossary() {
@@ -1023,5 +1464,12 @@ function showToast(msg, type = '') {
 }
 
 // ─── INIT ──────────────────────────────────────────
+const chipRatioCount = document.getElementById('chipRatioCount');
+if (chipRatioCount) chipRatioCount.textContent = `${Object.keys(rasyoMeta).length} ratios`;
+renderGlossaryChips();
 renderGlossary();
+updateKPIs();
+renderScoreBreakdown();
+renderStructure();
+renderVerdicts();
 renderHealthScore();
