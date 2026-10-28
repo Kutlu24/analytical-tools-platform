@@ -70,6 +70,9 @@
         <a href="#" class="nav-item" data-section="charts" title="Charts">
             <svg class="ico" aria-hidden="true"><use href="#i-charts"/></svg><span class="nav-label">Charts</span>
         </a>
+        <a href="#" class="nav-item" data-section="scenarios" title="Trends &amp; Scenarios">
+            <svg class="ico" aria-hidden="true"><use href="#i-charts"/></svg><span class="nav-label">Trends &amp; Scenarios</span>
+        </a>
         <a href="#" class="nav-item" data-section="report" title="Report">
             <svg class="ico" aria-hidden="true"><use href="#i-report"/></svg><span class="nav-label">Report</span>
         </a>
@@ -414,6 +417,43 @@ kisaVadeliBorclar,300000
             </div>
         </section>
 
+        <!-- ===== TRENDS & SCENARIOS ===== -->
+        <section id="section-scenarios" class="section">
+            <div class="section-head">
+                <h2 class="section-title">Trends &amp; Scenarios</h2>
+            </div>
+
+            <div class="chart-card sc-card">
+                <header class="chart-head">
+                    <div><h4>Periods</h4><p>Save the figures from Data Entry as a period, then repeat for each year or quarter</p></div>
+                    <span class="chart-tag">up to 6</span>
+                </header>
+                <div class="sc-row">
+                    <input type="text" id="scLabel" class="sc-input" placeholder="Label, e.g. FY2025" maxlength="16" aria-label="Period label">
+                    <button type="button" class="btn-primary btn-sm" id="scSave">Save current data as period</button>
+                    <button type="button" class="btn-secondary btn-sm" id="scSample">Load illustrative history</button>
+                    <button type="button" class="btn-ghost btn-sm" id="scClear">Clear all</button>
+                </div>
+                <div class="sc-chips" id="scPeriodList"></div>
+                <div id="scTrend"></div>
+            </div>
+
+            <div class="chart-card sc-card">
+                <header class="chart-head">
+                    <div><h4>What-if scenario</h4><p>Adjust a few drivers and see how the ratios and health score respond</p></div>
+                    <span class="chart-tag">deterministic</span>
+                </header>
+                <div class="sc-row">
+                    <label for="scBase" class="sc-k">Start from</label>
+                    <select id="scBase" class="sc-input"></select>
+                    <div class="sc-presets" id="scPresets"></div>
+                </div>
+                <div class="sc-levers" id="scLevers"></div>
+                <div id="scResult"></div>
+                <p class="sc-note">Assumptions: interest expense and long-term debt stay fixed; the effective tax/retention rate stays at the base level; profit and debt changes flow through cash and equity, so the balance sheet still balances; share count and share price are unchanged. This is a sensitivity check, not a forecast.</p>
+            </div>
+        </section>
+
         <!-- ===== REPORT ===== -->
         <section id="section-report" class="section">
             <div class="section-head">
@@ -459,5 +499,6 @@ kisaVadeliBorclar,300000
 
 <script src="viz.js"></script>
 <script src="script.js"></script>
+<script src="scenario.js"></script>
 </body>
 </html>

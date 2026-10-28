@@ -58,6 +58,7 @@ function showSection(id) {
 
     const sec = document.getElementById('section-' + id);
     if (sec) sec.classList.add('active');
+    if (id === 'scenarios' && window.FcScenario) FcScenario.refresh();
 
     const nav = document.querySelector(`[data-section="${id}"]`);
     if (nav) nav.classList.add('active');
@@ -67,6 +68,7 @@ function showSection(id) {
         input: 'Data Entry',
         ratios: 'Ratio Analysis',
         charts: 'Charts',
+        scenarios: 'Trends & Scenarios',
         report: 'Report',
         glossary: 'Glossary of Terms'
     };
@@ -296,30 +298,18 @@ function safe(num, den) {
 }
 
 // ─── CALCULATE ───────────────────────────────────────
-function hesapla() {
-    const dv = g('donenVarliklar');
-    const stok = g('stoklar');
-    const nakit = g('nakit');
-    const ta = g('toplamAktif');
-    const kvb = g('kisaVadeliBorclar');
-    const uvb = g('uzunVadeliBorclar');
-    const tb = g('toplamBorclar');
-    const oz = g('ozkaynak');
-    const ns = g('netSatislar');
-    const bk = g('brutKar');
-    const fk = g('faaliyetKari');
-    const nk = g('netKar');
-    const al = g('alacaklar');
-    const faiz = g('faizGiderleri');
-    const eps = g('eps');
-    const hp = g('hisseFiyati');
+const VERI_ALANLARI = ['donenVarliklar','stoklar','nakit','toplamAktif','kisaVadeliBorclar',
+    'uzunVadeliBorclar','toplamBorclar','ozkaynak','netSatislar','brutKar',
+    'faaliyetKari','netKar','alacaklar','faizGiderleri','eps','hisseFiyati'];
 
-    if (!dv && !ta && !ns) {
-        showToast('Please enter data first', 'error');
-        return;
-    }
-
-    rasyolar = {
+// Pure: figures object -> ratio object (also used by trend/scenario views)
+function hesaplaRasyolar(v) {
+    const dv = v.donenVarliklar || 0, stok = v.stoklar || 0, nakit = v.nakit || 0;
+    const ta = v.toplamAktif || 0, kvb = v.kisaVadeliBorclar || 0, tb = v.toplamBorclar || 0;
+    const oz = v.ozkaynak || 0, ns = v.netSatislar || 0, bk = v.brutKar || 0;
+    const fk = v.faaliyetKari || 0, nk = v.netKar || 0, al = v.alacaklar || 0;
+    const faiz = v.faizGiderleri || 0, eps = v.eps || 0, hp = v.hisseFiyati || 0;
+    return {
         // Liquidity
         cariOran: safe(dv, kvb),
         asitTest: safe(dv - stok, kvb),
@@ -348,18 +338,34 @@ function hesapla() {
         hisseFiyati: hp,
         eps: eps,
     };
+}
 
-    analizYapildi = true;
-
-    const skorBilesenleri = [
-        normalize(rasyolar.cariOran, 0, 3),
-        normalize(rasyolar.asitTest, 0, 2),
-        normalize(rasyolar.netKarMarji, 0, 0.3),
-        normalize(rasyolar.roe, 0, 0.3),
-        normalize(rasyolar.aktifDevir, 0, 3),
-        normalize(2 - (rasyolar.borcOzkaynak !== null ? rasyolar.borcOzkaynak : 2), 0, 2),
+// Pure: ratio object -> 0-100 health score
+function skorHesapla(r) {
+    const bilesenler = [
+        normalize(r.cariOran, 0, 3),
+        normalize(r.asitTest, 0, 2),
+        normalize(r.netKarMarji, 0, 0.3),
+        normalize(r.roe, 0, 0.3),
+        normalize(r.aktifDevir, 0, 3),
+        normalize(2 - (r.borcOzkaynak !== null ? r.borcOzkaynak : 2), 0, 2),
     ];
-    saglikSkoru = Math.round(skorBilesenleri.reduce((a, b) => a + b, 0) / skorBilesenleri.length * 100);
+    return Math.round(bilesenler.reduce((x, y) => x + y, 0) / bilesenler.length * 100);
+}
+
+function hesapla() {
+    const dv = g('donenVarliklar');
+    const ta = g('toplamAktif');
+    const ns = g('netSatislar');
+
+    if (!dv && !ta && !ns) {
+        showToast('Please enter data first', 'error');
+        return;
+    }
+
+    rasyolar = hesaplaRasyolar(Object.fromEntries(VERI_ALANLARI.map(f => [f, g(f)])));
+    analizYapildi = true;
+    saglikSkoru = skorHesapla(rasyolar);
 
     renderRatios();
     renderKPIs();
