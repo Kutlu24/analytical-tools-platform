@@ -1,5 +1,7 @@
 // Multi-period import for Financial Compass: turns CSV, TSV, TXT, JSON, JSONL,
 // XML, YAML and spreadsheet files (XLSX/XLS/ODS) into period snapshots.
+// SheetJS (0.20.3, from cdn.sheetjs.com) and js-yaml (4.1.0) are self-hosted in vendor/ and
+// loaded lazily: parsing user files with a CDN-served script would trust a third party at runtime.
 // Two layouts are recognised, whatever the container format:
 //   wide: first column = field names, the other columns = periods
 //   long: one row/object per period, columns/keys = fields
@@ -212,7 +214,7 @@ window.FcImport = (function () {
         const ext = file.name.split('.').pop().toLowerCase();
         const label = file.name.replace(/\.[^.]+$/, '');
         if (['xlsx', 'xls', 'xlsm', 'ods'].includes(ext)) {
-            await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+            await loadScript('vendor/xlsx.full.min.js');
             const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
             let lastErr;
             for (const name of wb.SheetNames) {
@@ -238,7 +240,7 @@ window.FcImport = (function () {
             return fromValue({ [doc.documentElement.tagName]: xmlToValue(doc.documentElement) }, label);
         }
         if (ext === 'yaml' || ext === 'yml') {
-            await loadScript('https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js');
+            await loadScript('vendor/js-yaml.min.js');
             return fromValue(jsyaml.load(text), label);
         }
         if (['csv', 'tsv', 'txt', 'tab', 'dat'].includes(ext)) return parseDelimited(text, label);
