@@ -426,7 +426,7 @@ kisaVadeliBorclar,300000
             <div class="chart-card sc-card">
                 <header class="chart-head">
                     <div><h4>Periods</h4><p>Save the figures from Data Entry as a period, then repeat for each year or quarter</p></div>
-                    <span class="chart-tag">up to 6</span>
+                    <span class="chart-tag">up to 12</span>
                 </header>
                 <div class="sc-row">
                     <input type="text" id="scLabel" class="sc-input" placeholder="Label, e.g. FY2025" maxlength="16" aria-label="Period label">
@@ -434,6 +434,15 @@ kisaVadeliBorclar,300000
                     <button type="button" class="btn-secondary btn-sm" id="scSample">Load illustrative history</button>
                     <button type="button" class="btn-ghost btn-sm" id="scClear">Clear all</button>
                 </div>
+                <div class="sc-drop" id="scDrop" tabindex="0" role="button" aria-label="Import periods from files">
+                    <svg class="ico" aria-hidden="true"><use href="#i-upload"/></svg>
+                    <div><strong>Import periods from files</strong>
+                    <span>Drop or click: CSV, TSV, TXT, JSON, JSONL, XML, YAML, Excel (XLSX/XLS/ODS). Several files at once are fine.</span></div>
+                    <input type="file" id="scFile" multiple style="display:none">
+                </div>
+                <div class="sc-row sc-row-tight"><button type="button" class="btn-ghost btn-sm" id="scTemplate">Download template (CSV)</button>
+                    <span class="sc-muted">Columns = periods, rows = fields. A file with one row per period works too.</span></div>
+                <div id="scImportReport" aria-live="polite"></div>
                 <div class="sc-chips" id="scPeriodList"></div>
                 <div id="scTrend"></div>
             </div>
@@ -499,6 +508,7 @@ kisaVadeliBorclar,300000
 
 <script src="viz.js"></script>
 <script src="script.js"></script>
+<script src="period-import.js"></script>
 <script src="scenario.js"></script>
 </body>
 </html>

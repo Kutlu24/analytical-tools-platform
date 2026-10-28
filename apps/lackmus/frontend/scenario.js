@@ -4,7 +4,7 @@
 // Everything is deterministic, client-side arithmetic: no model, no forecast.
 (function () {
     const KEY = 'fc-periods';
-    const MAX_PERIODS = 6;
+    const MAX_PERIODS = 12;
     const SKIP = new Set(['hisseFiyati', 'eps']);
     // Ratios where a lower value is the healthier direction; fd (P/E) is left neutral.
     const LOWER_BETTER = new Set(['borcOzkaynak', 'borcAktif', 'finansalKaldirac']);
@@ -20,6 +20,25 @@
     }
     const $ = id => document.getElementById(id);
     const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+    // Inputs each ratio needs. A period imported without them shows N/A instead of a
+    // misleading 0 (the health score still counts missing figures as zero).
+    const REQ = {
+        cariOran: ['donenVarliklar', 'kisaVadeliBorclar'], asitTest: ['donenVarliklar', 'stoklar', 'kisaVadeliBorclar'],
+        nakitOrani: ['nakit', 'kisaVadeliBorclar'], borcOzkaynak: ['toplamBorclar', 'ozkaynak'],
+        finansalKaldirac: ['toplamAktif', 'ozkaynak'], borcAktif: ['toplamBorclar', 'toplamAktif'],
+        faizKarsilama: ['faaliyetKari', 'faizGiderleri'], brutKarMarji: ['brutKar', 'netSatislar'],
+        faaliyetKarMarji: ['faaliyetKari', 'netSatislar'], netKarMarji: ['netKar', 'netSatislar'],
+        roe: ['netKar', 'ozkaynak'], roa: ['netKar', 'toplamAktif'], aktifDevir: ['netSatislar', 'toplamAktif'],
+        alacakDevir: ['alacaklar', 'netSatislar'], stokDevir: ['stoklar', 'netSatislar'], fd: ['eps', 'hisseFiyati'],
+    };
+    function ratiosOf(data, presence) {
+        const r = hesaplaRasyolar(data), src = presence || data;
+        Object.entries(REQ).forEach(([k, fields]) => {
+            if (fields.some(f => src[f] === undefined || src[f] === null)) r[k] = null;
+        });
+        return r;
+    }
 
     function currentFigures() {
         return Object.fromEntries(VERI_ALANLARI.map(f => [f, g(f)]));
@@ -70,8 +89,8 @@
             host.innerHTML = '<div class="sc-empty">Save at least two periods (for example FY2024 and FY2025) to see how each ratio moves.</div>';
             return;
         }
-        const rs = periods.map(p => hesaplaRasyolar(p.data));
-        const scores = rs.map(skorHesapla);
+        const rs = periods.map(p => ratiosOf(p.data));
+        const scores = periods.map(p => skorHesapla(hesaplaRasyolar(p.data)));
         const keys = Object.keys(rasyoMeta).filter(k => !SKIP.has(k));
         const head = `<tr><th>Ratio</th>${periods.map(p => `<th>${esc(p.label)}</th>`).join('')}<th>Trend</th><th>Δ first→last</th></tr>`;
         const scoreRow = `<tr class="sc-score"><td>Health score</td>${scores.map(s => `<td>${s}</td>`).join('')}<td>${spark(scores)}</td>` +
@@ -83,7 +102,7 @@
                 `<td class="${t === 'ok' ? 'sc-ok' : t === 'danger' ? 'sc-bad' : ''}">${deltaText(k, series[0], series[series.length - 1])}</td></tr>`;
         }).join('');
         host.innerHTML = `<div class="sc-table-wrap"><table class="sc-table"><thead>${head}</thead><tbody>${scoreRow}${rows}</tbody></table></div>` +
-            '<p class="sc-note">Green means the move is healthier for that ratio, red means weaker. P/E is shown without a verdict.</p>';
+            '<p class="sc-note">Green means the move is healthier for that ratio, red means weaker. P/E is shown without a verdict. N/A means the period has no figure for an input of that ratio; the health score treats missing figures as zero.</p>';
     }
 
     function addPeriod() {
@@ -118,6 +137,44 @@
         ].map(round);
         save(); renderPeriods();
         showToast('Illustrative sample history loaded', 'success');
+    }
+
+
+    // ─── IMPORT ────────────────────────────────────────
+    function report(items) {
+        $('scImportReport').innerHTML = items.map(i =>
+            `<div class="sc-import ${i.ok ? 'sc-import-ok' : 'sc-import-err'}"><strong>${esc(i.name)}</strong> ${i.html}</div>`).join('');
+    }
+
+    async function importFiles(files) {
+        const items = [];
+        let incoming = [];
+        for (const f of files) {
+            try {
+                const res = FcImport.finalize(await FcImport.parseFile(f));
+                if (!res.periods.length) throw new Error('No period with usable figures (need current assets, total assets or net sales)');
+                incoming = incoming.concat(res.periods);
+                const notes = [];
+                const derived = [...new Set(res.periods.flatMap(p => p.derived))];
+                if (derived.length) notes.push('derived ' + derived.join(', ') + ' where missing');
+                if (res.skipped.length) notes.push('skipped empty: ' + res.skipped.map(esc).join(', '));
+                if (res.unrecognized.length) notes.push('ignored: ' + res.unrecognized.slice(0, 6).map(esc).join(', ') + (res.unrecognized.length > 6 ? ' …' : ''));
+                items.push({ ok: true, name: f.name, html: `${res.periods.length} period(s): ${res.periods.map(p => esc(p.label)).join(', ')}` + (notes.length ? `<br><span class="sc-muted">${notes.join(' · ')}</span>` : '') });
+            } catch (e) {
+                items.push({ ok: false, name: f.name, html: esc(e.message) });
+            }
+        }
+        if (incoming.length) {
+            const labels = new Set(incoming.map(p => p.label));
+            const merged = periods.filter(p => !labels.has(p.label)).concat(incoming.map(p => ({ label: p.label, data: p.data })));
+            periods = FcImport.chronological(merged);
+            if (periods.length > MAX_PERIODS) {
+                periods = periods.slice(-MAX_PERIODS);
+                items.push({ ok: false, name: 'Limit', html: `Only the latest ${MAX_PERIODS} periods are kept.` });
+            }
+            save(); renderPeriods(); renderScenario();
+        }
+        report(items);
     }
 
     // ─── SCENARIO ──────────────────────────────────────
@@ -196,8 +253,8 @@
             return;
         }
         const out = applyScenario(b, L);
-        const r0 = hesaplaRasyolar(b), r1 = hesaplaRasyolar(out.figures);
-        const s0 = skorHesapla(r0), s1 = skorHesapla(r1);
+        const r0 = ratiosOf(b), r1 = ratiosOf(out.figures, b);
+        const s0 = skorHesapla(hesaplaRasyolar(b)), s1 = skorHesapla(hesaplaRasyolar(out.figures));
         const keys = Object.keys(rasyoMeta).filter(k => !SKIP.has(k));
         const rows = keys.map(k => {
             const t = tone(k, r0[k], r1[k]);
@@ -222,6 +279,19 @@
     }
 
     function init() {
+        const drop = $('scDrop'), fileEl = $('scFile');
+        fileEl.accept = FcImport.accept;
+        drop.addEventListener('click', () => fileEl.click());
+        drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileEl.click(); } });
+        drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag-over'); });
+        drop.addEventListener('dragleave', () => drop.classList.remove('drag-over'));
+        drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('drag-over'); importFiles(Array.from(e.dataTransfer.files)); });
+        fileEl.addEventListener('change', () => { importFiles(Array.from(fileEl.files)); fileEl.value = ''; });
+        $('scTemplate').addEventListener('click', () => {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([FcImport.template], { type: 'text/csv;charset=utf-8;' }));
+            a.download = 'financial_compass_periods_template.csv'; a.click();
+        });
         $('scSave').addEventListener('click', addPeriod);
         $('scSample').addEventListener('click', loadSampleHistory);
         $('scClear').addEventListener('click', () => { periods = []; save(); renderPeriods(); renderScenario(); });
@@ -249,6 +319,6 @@
     }
 
     // Re-render when the section opens so it reflects the latest Data Entry figures.
-    window.FcScenario = { refresh() { renderTrend(); renderScenario(); }, applyScenario, currentFigures };
+    window.FcScenario = { refresh() { renderTrend(); renderScenario(); }, applyScenario, currentFigures, importFiles };
     init();
 })();

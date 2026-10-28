@@ -1537,3 +1537,15 @@ body.nav-collapsed .sidebar-footer { text-align: center; }
 .sc-arrow { color: var(--text3); font-size: 20px; }
 .sc-alert { padding: 9px 14px; margin-bottom: 10px; border: 1px solid rgba(245, 158, 11, .35); background: var(--warn-dim); color: #fbbf24; border-radius: var(--radius-sm); font-size: 13px; }
 @media (max-width: 640px) { .sc-presets { margin-left: 0; } .sc-input { min-width: 0; flex: 1; } }
+
+/* Period import */
+.sc-drop { display: flex; align-items: center; gap: 14px; padding: 16px 18px; margin-bottom: 10px; border: 1.5px dashed var(--border); border-radius: var(--radius-sm); background: var(--bg2); cursor: pointer; transition: border-color var(--transition), background var(--transition); }
+.sc-drop:hover, .sc-drop:focus-visible, .sc-drop.drag-over { border-color: var(--accent); background: var(--accent-dim); outline: none; }
+.sc-drop .ico { width: 22px; height: 22px; flex: none; color: var(--accent); }
+.sc-drop strong { display: block; font-size: 13.5px; }
+.sc-drop span { font-size: 12.5px; color: var(--text2); }
+.sc-row-tight { margin: 0 0 12px; }
+.sc-import { padding: 9px 14px; margin-bottom: 8px; border-radius: var(--radius-sm); font-size: 13px; border: 1px solid var(--border); }
+.sc-import-ok { background: var(--accent-dim); border-color: rgba(74, 222, 128, .3); }
+.sc-import-err { background: var(--danger-dim); border-color: rgba(239, 68, 68, .35); color: #fca5a5; }
+#scImportReport { margin-bottom: 12px; }
