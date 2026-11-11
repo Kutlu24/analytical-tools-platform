@@ -9,11 +9,11 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from ..config import settings
 from ..explain import explain_lp, explain_queueing
@@ -81,8 +81,8 @@ def get_config() -> ConfigInfo:
 
 
 class SolveRequest(BaseModel):
-    question: str
-    lang: str = "tr"
+    question: str = Field(min_length=1, max_length=6000)
+    lang: str = Field(default="tr", max_length=8)
 
 
 class SolveResponse(BaseModel):
@@ -101,7 +101,10 @@ def solve(req: SolveRequest) -> SolveResponse:
     parsed = parse_problem(req.question)
 
     if parsed.problem_type == "lp" and parsed.lp is not None:
-        solution = solve_lp(parsed.lp)
+        try:
+            solution = solve_lp(parsed.lp)
+        except ValueError as e:
+            raise HTTPException(422, str(e)) from e
         explanation = explain_lp(req.question, parsed.lp, solution, lang=lang)
         return SolveResponse(
             problem_type="lp",
@@ -111,6 +114,8 @@ def solve(req: SolveRequest) -> SolveResponse:
         )
 
     if parsed.problem_type == "queueing" and parsed.queueing is not None:
+        if not 1 <= parsed.queueing.servers <= 1000:  # the M/M/c formula loops over the servers
+            raise HTTPException(422, "The number of servers must be between 1 and 1000")
         result = solve_queueing(parsed.queueing)
         explanation = explain_queueing(req.question, parsed.queueing, result, lang=lang)
         return SolveResponse(

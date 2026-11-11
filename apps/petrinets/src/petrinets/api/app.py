@@ -14,7 +14,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from ..config import settings
 from ..llm.rationale import Rationale, explain
@@ -84,14 +84,15 @@ def get_config() -> ConfigInfo:
 
 
 class RecommendRequest(BaseModel):
-    total_rooms: int
-    occupied_now: int
-    days_until: int
-    day_of_week: str
+    # Bounded: the simulation loops over rooms x days x 300 runs, so a "hotel" with a billion rooms would hang the server.
+    total_rooms: int = Field(le=5000)
+    occupied_now: int = Field(le=5000)
+    days_until: int = Field(le=3650)
+    day_of_week: str = Field(max_length=20)
     local_event: bool = False
-    floor_price: float
-    ceiling_price: float
-    competitor_price: float | None = None
+    floor_price: float = Field(ge=0, le=1_000_000, allow_inf_nan=False)
+    ceiling_price: float = Field(ge=0, le=1_000_000, allow_inf_nan=False)
+    competitor_price: float | None = Field(default=None, ge=0, le=1_000_000, allow_inf_nan=False)
     no_llm: bool = False
 
 

@@ -23,6 +23,8 @@ from lackmus.api.app import app as lackmus_app
 from petrinets.api.app import app as petrinets_app
 from yoneylem.api.app import app as yoneylem_app
 
+from .guard import Guard
+
 _STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 app = FastAPI(
@@ -94,6 +96,8 @@ def llms(request: Request) -> PlainTextResponse:
 def health() -> dict:
     return {"status": "ok"}
 
+
+app.add_middleware(Guard)  # rate limits and body caps for the costly endpoints of all three tools (see guard.py)
 
 app.mount("/yoneylem", yoneylem_app)
 app.mount("/finans", lackmus_app)

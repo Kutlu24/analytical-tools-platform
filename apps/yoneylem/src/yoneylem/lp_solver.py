@@ -17,7 +17,14 @@ _OP_MAP = {
 }
 
 
+MAX_VARIABLES, MAX_CONSTRAINTS, TIME_LIMIT_S = 200, 400, 10
+
+
 def solve_lp(formulation: LPFormulation) -> LPSolution:
+    # The formulation comes from an LLM reading a stranger's text: its size and the solver's running time are bounded
+    # (an integer program can otherwise keep a CPU busy for hours).
+    if len(formulation.variables) > MAX_VARIABLES or len(formulation.constraints) > MAX_CONSTRAINTS:
+        raise ValueError(f"Problem too large (max {MAX_VARIABLES} variables, {MAX_CONSTRAINTS} constraints)")
     sense = pulp.LpMaximize if formulation.sense == "max" else pulp.LpMinimize
     prob = pulp.LpProblem("problem", sense)
 
@@ -40,7 +47,7 @@ def solve_lp(formulation: LPFormulation) -> LPSolution:
             raise ValueError(f"Unknown constraint operator: {c.op!r}")
         prob += pulp.LpConstraint(expr, op, name=f"c{i}", rhs=c.rhs)
 
-    prob.solve(pulp.PULP_CBC_CMD(msg=False))
+    prob.solve(pulp.PULP_CBC_CMD(msg=False, timeLimit=TIME_LIMIT_S))
 
     status = pulp.LpStatus[prob.status]
     obj_value = pulp.value(prob.objective) if status == "Optimal" else None

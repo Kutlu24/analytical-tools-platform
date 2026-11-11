@@ -1,0 +1,147 @@
+"""Platform-level guard for the endpoints that cost something: an LLM call on a free-tier key, or real CPU.
+
+The three tools are vendored sub-apps, so the limits live here, in front of all of them, as one pure-ASGI layer:
+
+  * per-client and global rate limits for the costly POST endpoints (RULES);
+  * request bodies are capped while they stream in (BODY_LIMITS), not only by their declared length.
+
+The client is the right-most X-Forwarded-For entry (the one our own proxy appended; anything further left is whatever
+the caller typed), IPv6 clients are counted per /64, and the table of clients has a fixed size (plain LRU). Whoever
+invents addresses therefore only resets their own counters; the global budget still holds.
+"""
+from __future__ import annotations
+
+import ipaddress
+import json
+import threading
+import time
+from collections import OrderedDict, deque
+
+WINDOW_S = 600.0
+MAX_CLIENTS = 5000
+# path -> (requests per client per window, requests in total per window)
+RULES: dict[str, tuple[int, int]] = {
+    "/yoneylem/solve": (12, 150),                          # two LLM calls + a solver run each
+    "/finans/api/extract-balance-sheet": (8, 80),          # a vision-model call each
+    "/petrinets/recommend": (30, 300),                     # 300 simulation runs (+ an LLM call) each
+}
+DEFAULT_BODY = 64 * 1024
+BODY_LIMITS: dict[str, int] = {"/finans/api/extract-balance-sheet": 12 * 1024 * 1024, "/finans/api/advisor/chat": 512 * 1024}
+
+
+def bucket(addr: str) -> str:
+    try:
+        ip = ipaddress.ip_address(addr.strip())
+    except ValueError:
+        return "unknown"
+    if ip.version == 6:
+        if ip.ipv4_mapped is not None:
+            return str(ip.ipv4_mapped)
+        return str(ipaddress.ip_network(f"{ip}/64", strict=False).network_address) + "/64"
+    return str(ip)
+
+
+class Limiter:
+    def __init__(self, clock=time.monotonic):
+        self._clock = clock
+        self._lock = threading.Lock()
+        self._clients: OrderedDict[tuple[str, str], deque[float]] = OrderedDict()
+        self._global: dict[str, deque[float]] = {}
+
+    def check(self, path: str, client: str) -> int:
+        """0 = allowed (and counted); otherwise the seconds to wait."""
+        per_client, total = RULES[path]
+        now = self._clock()
+        with self._lock:
+            g = self._global.setdefault(path, deque())
+            while g and now - g[0] > WINDOW_S:
+                g.popleft()
+            if len(g) >= total:
+                return max(1, int(g[0] + WINDOW_S - now) + 1)
+            key = (path, client)
+            if key not in self._clients and len(self._clients) >= MAX_CLIENTS:
+                self._clients.popitem(last=False)
+            q = self._clients.setdefault(key, deque())
+            self._clients.move_to_end(key)
+            while q and now - q[0] > WINDOW_S:
+                q.popleft()
+            if len(q) >= per_client:
+                return max(1, int(q[0] + WINDOW_S - now) + 1)
+            q.append(now)
+            g.append(now)
+            return 0
+
+    def reset(self) -> None:
+        with self._lock:
+            self._clients.clear()
+            self._global.clear()
+
+
+limiter = Limiter()
+
+
+class _TooLarge(Exception):
+    pass
+
+
+class Guard:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http" or scope.get("method") in ("GET", "HEAD", "OPTIONS"):
+            await self.app(scope, receive, send)
+            return
+        path = scope.get("path", "")
+        xff, lengths = [], []
+        for k, v in scope.get("headers", []):
+            if k.lower() == b"x-forwarded-for":
+                xff += [p.strip() for p in v.decode("latin-1").split(",") if p.strip()]
+            elif k.lower() == b"content-length":
+                lengths.append(v.decode("latin-1").strip())
+
+        async def reply(status: int, detail: str, extra: list | None = None) -> None:
+            body = json.dumps({"detail": detail}).encode()
+            await send({"type": "http.response.start", "status": status,
+                        "headers": [(b"content-type", b"application/json"), (b"content-length", str(len(body)).encode()),
+                                    (b"x-content-type-options", b"nosniff")] + (extra or [])})
+            await send({"type": "http.response.body", "body": body})
+
+        limit = BODY_LIMITS.get(path, DEFAULT_BODY)
+        if len(lengths) > 1 or any(not n.isdigit() for n in lengths):
+            await reply(400, "Bad Content-Length.")
+            return
+        if lengths and int(lengths[0]) > limit:
+            await reply(413, "Request too large.")
+            return
+        if path in RULES:
+            client = bucket(xff[-1] if xff else ((scope.get("client") or ["unknown"])[0] or "unknown"))
+            wait = limiter.check(path, client)
+            if wait:
+                await reply(429, "Too many requests in a short time. Please wait a few minutes.", [(b"retry-after", str(wait).encode())])
+                return
+        state = {"n": 0, "over": False, "started": False}
+
+        async def counting():
+            msg = await receive()
+            if msg["type"] == "http.request":
+                state["n"] += len(msg.get("body", b""))
+                if state["n"] > limit:
+                    state["over"] = True
+                    raise _TooLarge
+            return msg
+
+        async def guarded(msg):
+            if state["over"]:
+                return
+            if msg["type"] == "http.response.start":
+                state["started"] = True
+            await send(msg)
+
+        try:
+            await self.app(scope, counting, guarded)
+        except BaseException:  # noqa: BLE001 - re-raised unless it is our own size abort
+            if not state["over"]:
+                raise
+        if state["over"] and not state["started"]:
+            await reply(413, "Request too large.")

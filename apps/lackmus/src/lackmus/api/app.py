@@ -11,6 +11,7 @@ ratio calculator already reads - no change to the ratio math itself.
 """
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
 
@@ -72,14 +73,17 @@ class ExtractResponse(BaseModel):
     source: str  # "pdf-text" | "pdf-scanned-vision" | "image-vision"
 
 
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 _IMAGE_MIME_TYPES = {"image/png", "image/jpeg", "image/jpg", "image/webp"}
 
 
 @app.post("/api/extract-balance-sheet", response_model=ExtractResponse)
 async def extract_balance_sheet(file: UploadFile) -> ExtractResponse:
-    content = await file.read()
+    content = await file.read(MAX_UPLOAD_BYTES + 1)
     if not content:
         raise HTTPException(400, "Empty file")
+    if len(content) > MAX_UPLOAD_BYTES:
+        raise HTTPException(413, "File too large (max 10 MB)")
 
     content_type = (file.content_type or "").lower()
     is_pdf = content_type == "application/pdf" or (file.filename or "").lower().endswith(".pdf")
@@ -101,11 +105,13 @@ async def extract_balance_sheet(file: UploadFile) -> ExtractResponse:
             fields = extract_from_image(content, mime)
             source = "image-vision"
         else:
-            raise HTTPException(415, f"Unsupported file type: {content_type or file.filename}")
+            raise HTTPException(415, "Unsupported file type (PDF, PNG, JPEG or WebP)")
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(500, f"Extraction failed ({type(e).__name__}): {str(e)[:300]}") from e
+        # the error text of a provider or parser can carry file paths, request details or key fragments: log it, do not send it
+        logging.getLogger(__name__).exception("balance-sheet extraction failed")
+        raise HTTPException(500, f"Extraction failed ({type(e).__name__}). Try a clearer scan or enter the figures by hand.") from e
 
     return ExtractResponse(fields=fields, source=source)
 
