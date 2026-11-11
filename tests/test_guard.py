@@ -110,8 +110,10 @@ def test_pdf_handling_is_bounded():
         doc.new_page().insert_text((72, 72), f"page {i} " + "x" * 50)
     text = ph.extract_pdf_text(doc.tobytes())
     assert f"page {ph.MAX_TEXT_PAGES - 1} " in text and f"page {ph.MAX_TEXT_PAGES} " not in text
-    huge = fitz.open(); huge.new_page(width=14400, height=14400)
+    huge = fitz.open()
+    huge.new_page(width=14400, height=14400)
     pix = fitz.Pixmap(ph.rasterize_first_page(huge.tobytes()))
     assert pix.width * pix.height <= ph.MAX_PAGE_PIXELS * 1.01
-    a4 = fitz.open(); a4.new_page()
+    a4 = fitz.open()
+    a4.new_page()
     assert fitz.Pixmap(ph.rasterize_first_page(a4.tobytes())).width == 1190
