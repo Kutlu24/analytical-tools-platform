@@ -14,6 +14,8 @@ Run with:
 from __future__ import annotations
 
 import os
+import re
+from html import escape
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -33,13 +35,28 @@ app = FastAPI(
 )
 
 
+_HOST = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?(?::\d{1,5})?$")
+
+
+def _safe_host(request: Request) -> str:
+    """The Host / X-Forwarded-Host headers are text from the client and end up inside HTML, the sitemap and robots.txt:
+    only a plain host name (optionally with a port) is accepted, anything else falls back."""
+    for cand in (request.headers.get("x-forwarded-host", "").split(",")[0].strip(), request.url.netloc):
+        if cand and _HOST.match(cand):
+            return cand
+    return "localhost"
+
+
 def _site(request: Request) -> str:
     """Public base URL: SITE_URL env var if set, else the (proxy-forwarded) request origin, https off localhost."""
     env = os.environ.get("SITE_URL")
     if env:
         return env.rstrip("/")
-    host = request.headers.get("x-forwarded-host") or request.url.netloc
-    proto = request.headers.get("x-forwarded-proto") or request.url.scheme
+    render = os.environ.get("RENDER_EXTERNAL_URL")  # set by Render itself: on Render no request header decides the origin
+    if render and re.match(r"^https?://[A-Za-z0-9.-]+(:\d+)?/?$", render):
+        return render.rstrip("/")
+    host = _safe_host(request)
+    proto = "http"  # local development; everything else is https (set just below)
     if host.split(":")[0] not in ("localhost", "127.0.0.1", "testserver"):
         proto = "https"
     return f"{proto}://{host}"
@@ -57,7 +74,7 @@ _BLOCK = ("GPTBot", "ClaudeBot", "Google-Extended", "CCBot")
 def index(request: Request) -> HTMLResponse:
     site = _site(request)
     html = (_STATIC_DIR / "index.html").read_text(encoding="utf-8")
-    return HTMLResponse(html.replace("__SITE__", site))
+    return HTMLResponse(html.replace("__SITE__", escape(site, quote=True)))
 
 
 @app.get("/robots.txt", include_in_schema=False)
@@ -74,7 +91,7 @@ def robots(request: Request) -> PlainTextResponse:
 @app.get("/sitemap.xml", include_in_schema=False)
 def sitemap(request: Request) -> Response:
     site = _site(request)
-    urls = "".join(f"<url><loc>{site}{p}</loc></url>" for p in _TOOL_PATHS)
+    urls = "".join(f"<url><loc>{escape(site + p)}</loc></url>" for p in _TOOL_PATHS)
     xml = f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>'
     return Response(xml, media_type="application/xml")
 
