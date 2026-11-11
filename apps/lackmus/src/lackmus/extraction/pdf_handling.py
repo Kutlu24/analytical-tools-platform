@@ -9,6 +9,10 @@ from __future__ import annotations
 # balance sheet; below this, treat it as scanned/image-only and fall back
 # to the vision path instead of feeding the LLM a near-empty document.
 _MIN_TEXT_CHARS = 200
+# Bounds for a file a stranger uploads: a balance sheet is a few pages, and a PDF page can declare any size.
+MAX_TEXT_PAGES = 30
+MAX_TEXT_CHARS = 120_000
+MAX_PAGE_PIXELS = 20_000_000
 
 
 def extract_pdf_text(pdf_bytes: bytes) -> str:
@@ -16,7 +20,14 @@ def extract_pdf_text(pdf_bytes: bytes) -> str:
 
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     try:
-        return "\n".join(page.get_text() for page in doc)
+        parts, total = [], 0
+        for i, page in enumerate(doc):
+            if i >= MAX_TEXT_PAGES or total >= MAX_TEXT_CHARS:
+                break
+            text = page.get_text()[: MAX_TEXT_CHARS - total]
+            parts.append(text)
+            total += len(text)
+        return "\n".join(parts)
     finally:
         doc.close()
 
@@ -37,6 +48,8 @@ def rasterize_first_page(pdf_bytes: bytes, zoom: float = 2.0) -> bytes:
         if doc.page_count == 0:
             raise ValueError("PDF has no pages")
         page = doc.load_page(0)
+        area = max(1.0, page.rect.width * page.rect.height)
+        zoom = min(zoom, (MAX_PAGE_PIXELS / area) ** 0.5)  # the bitmap stays under the cap whatever size the page claims
         pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom))
         return pix.tobytes("png")
     finally:

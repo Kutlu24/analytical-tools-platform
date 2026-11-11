@@ -100,3 +100,18 @@ def test_requests_refused_by_validation_are_not_charged(c, monkeypatch):
     for _ in range(10):                                   # invalid bodies: nothing costly runs, so no budget is spent
         assert c.post("/yoneylem/solve", json={"question": ""}).status_code == 422
     assert [c.post("/yoneylem/solve", json={"question": "q"}).status_code for _ in range(3)] == [200, 200, 429]
+
+
+def test_pdf_handling_is_bounded():
+    import pymupdf as fitz
+    from lackmus.extraction import pdf_handling as ph
+    doc = fitz.open()
+    for i in range(ph.MAX_TEXT_PAGES + 10):
+        doc.new_page().insert_text((72, 72), f"page {i} " + "x" * 50)
+    text = ph.extract_pdf_text(doc.tobytes())
+    assert f"page {ph.MAX_TEXT_PAGES - 1} " in text and f"page {ph.MAX_TEXT_PAGES} " not in text
+    huge = fitz.open(); huge.new_page(width=14400, height=14400)
+    pix = fitz.Pixmap(ph.rasterize_first_page(huge.tobytes()))
+    assert pix.width * pix.height <= ph.MAX_PAGE_PIXELS * 1.01
+    a4 = fitz.open(); a4.new_page()
+    assert fitz.Pixmap(ph.rasterize_first_page(a4.tobytes())).width == 1190
