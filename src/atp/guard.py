@@ -6,9 +6,12 @@ The three tools are vendored sub-apps, so the limits live here, in front of all 
   * request bodies are capped while they stream in (BODY_LIMITS), not only by their declared length.
 
 The client is the right-most X-Forwarded-For entry (the one our own proxy appended; anything further left is whatever
-the caller typed), IPv6 clients are counted per /64, and the table of clients has a fixed size (plain LRU). Whoever
+the caller typed), IPv6 clients are counted per /56, and the table of clients has a fixed size (plain LRU). Whoever
 invents addresses therefore only resets their own counters; the global budget still holds.
 """
+# Known trade-off: the global budget is what protects the free-tier key, and someone with many addresses can use it up
+# for one window (10 minutes), during which everyone gets 429. Without it the same person could spend the key's whole
+# daily quota, which is the longer outage. Only requests that pass validation are charged.
 from __future__ import annotations
 
 import ipaddress
@@ -37,7 +40,7 @@ def bucket(addr: str) -> str:
     if ip.version == 6:
         if ip.ipv4_mapped is not None:
             return str(ip.ipv4_mapped)
-        return str(ipaddress.ip_network(f"{ip}/64", strict=False).network_address) + "/64"
+        return str(ipaddress.ip_network(f"{ip}/56", strict=False).network_address) + "/56"  # what a home or small site is usually given
     return str(ip)
 
 
@@ -70,6 +73,13 @@ class Limiter:
             q.append(now)
             g.append(now)
             return 0
+
+    def refund(self, path: str, client: str) -> None:
+        """Take back the most recent hit: the request was refused by validation, so nothing costly ran."""
+        with self._lock:
+            for q in (self._clients.get((path, client)), self._global.get(path)):
+                if q:
+                    q.pop()
 
     def reset(self) -> None:
         with self._lock:
@@ -114,9 +124,11 @@ class Guard:
         if lengths and int(lengths[0]) > limit:
             await reply(413, "Request too large.")
             return
+        charged = None
         if path in RULES:
             client = bucket(xff[-1] if xff else ((scope.get("client") or ["unknown"])[0] or "unknown"))
             wait = limiter.check(path, client)
+            charged = (path, client)
             if wait:
                 await reply(429, "Too many requests in a short time. Please wait a few minutes.", [(b"retry-after", str(wait).encode())])
                 return
@@ -136,6 +148,8 @@ class Guard:
                 return
             if msg["type"] == "http.response.start":
                 state["started"] = True
+                if charged and 400 <= msg["status"] < 500:  # refused by validation: no model or solver ran, so it does not count
+                    limiter.refund(*charged)
             await send(msg)
 
         try:

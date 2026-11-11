@@ -48,7 +48,7 @@ def test_client_table_has_a_fixed_size_and_ipv6_counts_per_64(monkeypatch):
     for i in range(500):
         assert lim.check("/x", guard.bucket(f"10.0.{i // 250}.{i % 250}")) == 0
     assert len(lim._clients) == 20
-    assert guard.bucket("2a02:1:2:3::1") == guard.bucket("2a02:1:2:3:ffff::9") != guard.bucket("2a02:1:2:4::1")
+    assert guard.bucket("2a02:1:2:300::1") == guard.bucket("2a02:1:2:3ff:ffff::9") != guard.bucket("2a02:1:2:400::1")
     assert guard.bucket("::ffff:192.0.2.7") == "192.0.2.7" and guard.bucket("nonsense") == "unknown"
 
 
@@ -93,3 +93,10 @@ def test_pricing_inputs_are_bounded(c, monkeypatch, change):
     monkeypatch.setattr(papp, "recommend_price", lambda **kw: called.append(kw))
     body = {"total_rooms": 50, "occupied_now": 10, "days_until": 7, "day_of_week": "Friday", "floor_price": 80, "ceiling_price": 200, "no_llm": True, **change}
     assert c.post("/petrinets/recommend", json=body).status_code == 422 and not called
+
+
+def test_requests_refused_by_validation_are_not_charged(c, monkeypatch):
+    monkeypatch.setitem(guard.RULES, "/yoneylem/solve", (2, 3))
+    for _ in range(10):                                   # invalid bodies: nothing costly runs, so no budget is spent
+        assert c.post("/yoneylem/solve", json={"question": ""}).status_code == 422
+    assert [c.post("/yoneylem/solve", json={"question": "q"}).status_code for _ in range(3)] == [200, 200, 429]
