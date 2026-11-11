@@ -15,7 +15,7 @@ from atp.app import app
 def c(monkeypatch):
     guard.limiter.reset()
     monkeypatch.setattr(yapp, "parse_problem", lambda q: ParsedProblem(problem_type="other"))
-    return TestClient(app)
+    return TestClient(app, client=("127.0.0.1", 50000))
 
 
 def test_costly_endpoint_is_limited_per_client_and_others_are_not_affected(c, monkeypatch):
@@ -117,3 +117,12 @@ def test_pdf_handling_is_bounded():
     a4 = fitz.open()
     a4.new_page()
     assert fitz.Pixmap(ph.rasterize_first_page(a4.tobytes())).width == 1190
+
+
+def test_a_direct_caller_cannot_pick_its_own_identity():
+    from atp import guard as g
+    assert g.client_of("203.0.113.50", ["1.2.3.4"]) == "203.0.113.50"          # public peer: the header is ignored
+    assert g.client_of("203.0.113.50", []) == "203.0.113.50"
+    assert g.client_of("10.0.0.2", ["9.9.9.9", "198.51.100.7"]) == "198.51.100.7"   # our proxy: its own (right-most) entry
+    assert g.client_of("127.0.0.1", []) == "127.0.0.1" and g.client_of("", []) == "unknown"
+    assert g.peer_is_proxy("172.18.0.3") and g.peer_is_proxy("::1") and not g.peer_is_proxy("8.8.8.8") and not g.peer_is_proxy("testclient")

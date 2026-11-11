@@ -1,6 +1,7 @@
 """POST /api/advisor/chat: grounded chat about the figures the user entered."""
 from __future__ import annotations
 
+import ipaddress
 import threading
 import time
 from collections import defaultdict, deque
@@ -25,11 +26,21 @@ _hits: dict[str, deque[float]] = defaultdict(deque)
 _lock = threading.Lock()
 
 
+_PROXY_NETS = [ipaddress.ip_network(n) for n in ("127.0.0.0/8", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16",
+                                                  "100.64.0.0/10", "::1/128", "fc00::/7")]
+
+
 def _client_id(request: Request) -> str:
-    """The right-most X-Forwarded-For entry is the one our own proxy appended; earlier
-    entries are whatever the caller sent and can be forged."""
+    """Behind our own proxy (a loopback or private peer) the right-most X-Forwarded-For entry is the one that proxy
+    appended; earlier entries are whatever the caller sent. A caller that connects directly is counted by its own
+    address, whatever it writes into the header."""
+    peer = request.client.host if request.client else "unknown"
     parts = [p.strip() for p in request.headers.get("x-forwarded-for", "").split(",") if p.strip()]
-    return parts[-1] if parts else (request.client.host if request.client else "unknown")
+    try:
+        via_proxy = any(ipaddress.ip_address(peer) in net for net in _PROXY_NETS)
+    except ValueError:
+        via_proxy = False
+    return parts[-1] if parts and via_proxy else peer
 
 
 def _prune(q: deque[float], now: float) -> None:
